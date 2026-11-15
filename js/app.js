@@ -96,7 +96,7 @@ function caption(text, ms) {
 
 /* ---------- פתיחה: תהליך ההכנה ---------- */
 let busy = false;
-const INTRO = { dough: 'כדור בצק שתפח לאט', stretch: 'פותחים ביד', cheese: 'מוצרלה', ready: 'התוספות שלכם' };
+const INTRO = { dough: 'כדור בצק שתפח לאט', stretch: 'פותחים ביד', cheese: 'גבינה צהובה, הרבה', ready: 'התוספות שלכם' };
 $('#startBtn').addEventListener('click', async () => {
   setMode('build'); busy = true;
   if (scene) await scene.playIntro((s) => caption(s === 'sauce' ? (cur.base === 'red' ? 'רוטב עגבניות' : 'שמן זית ושום') : INTRO[s], s === 'ready' ? 2200 : 0));
@@ -108,9 +108,46 @@ function setMode(m) {
   if (matchMedia('(max-width: 860px)').matches) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+/* ---------- שעון אפייה דרמטי ---------- */
+const TICKS = 18;
+let lastTick = -1;
+function timerStart() {
+  const m = $('#ovenMeter'), g = $('#ovenTicks');
+  if (!g.children.length) {
+    for (let i = 0; i < TICKS; i++) {
+      const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      const a = (i / TICKS) * Math.PI * 2 - Math.PI / 2;
+      l.setAttribute('x1', 60 + Math.cos(a) * 46); l.setAttribute('y1', 60 + Math.sin(a) * 46);
+      l.setAttribute('x2', 60 + Math.cos(a) * 54); l.setAttribute('y2', 60 + Math.sin(a) * 54);
+      g.appendChild(l);
+    }
+  }
+  [...g.children].forEach((l) => l.classList.remove('lit'));
+  lastTick = -1; $('#ovenSec').textContent = '90';
+  $('#ovenRing').style.strokeDashoffset = 0;
+  m.classList.remove('end'); m.hidden = false;
+}
+function timerTick(p) {
+  const k = Math.min(TICKS, Math.floor(p * TICKS + 0.001));
+  $('#ovenRing').style.strokeDashoffset = (p * 339.3).toFixed(1);
+  if (k === lastTick) return;
+  lastTick = k;
+  [...$('#ovenTicks').children].forEach((l, i) => l.classList.toggle('lit', i < k));
+  const num = $('#ovenSec');
+  num.textContent = String(90 - k * 5);
+  const m = $('#ovenMeter');
+  m.classList.remove('tick'); void m.offsetWidth; m.classList.add('tick');
+  if (k >= TICKS - 3) m.classList.add('hot');
+}
+function timerEnd() {
+  const m = $('#ovenMeter');
+  m.classList.add('end'); $('#ovenSec').textContent = '0';
+  setTimeout(() => { m.hidden = true; m.classList.remove('end', 'hot', 'tick'); }, 1300);
+}
+
 /* ---------- לטאבון ---------- */
-const STAGES = ['peel', 'in', 'baking', 'out'];
-const TITLES = { peel: 'על המרדה', in: 'פנימה, אל האש', baking: 'נאפית מול האש', out: 'יוצאת מהטאבון' };
+const STAGES = ['oil', 'peel', 'in', 'baking', 'out'];
+const TITLES = { oil: 'שמן זית בסיבוב', peel: 'על המרדה', in: 'פנימה, אל האש', baking: 'נאפית מול האש', out: 'יוצאת מהטאבון' };
 $('#bakeBtn').addEventListener('click', async () => {
   if (busy) return;
   if (!cfg.ordersOpen) return toast('ההזמנות סגורות כרגע');
@@ -123,13 +160,14 @@ $('#bakeBtn').addEventListener('click', async () => {
   if (scene) {
     await scene.bake((s, p) => {
       if (STAGES.includes(s)) mark(s);
-      if (s === 'baking') { meter.hidden = false; caption('דקה וחצי, 450 מעלות'); }
-      if (s === 'bakeProgress') { $('#ovenSec').textContent = Math.round(90 * (1 - p)); $('#ovenBar').style.width = `${p * 100}%`; }
-      if (s === 'out') { meter.hidden = true; caption('', 1); }
+      if (s === 'oil') caption('שמן זית');
+      if (s === 'peel') caption('', 1);
+      if (s === 'baking') { timerStart(); caption('דקה וחצי, 450 מעלות'); }
+      if (s === 'bakeProgress') timerTick(p);
+      if (s === 'out') { timerEnd(); caption('מוכנה!', 1800); }
     });
     img = scene.snapshot(240);
   }
-  meter.hidden = true;
   const same = cart.find((c) => c.base === pizza.base && c.toppings.join() === pizza.toppings.join());
   if (same) { same.qty++; if (img) same.img = img; } else cart.push({ ...pizza, qty: 1, img, uid: Date.now() });
   saveCart(); renderCart();

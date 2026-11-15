@@ -37,9 +37,15 @@
       <div class="fade" id="fade" aria-hidden="true"></div>
       <div class="stage-caption" id="caption" aria-live="polite"></div>
       <div class="oven-meter" id="ovenMeter" hidden>
-        <div class="oven-num"><span id="ovenSec">90</span></div>
+        <div class="oven-dial">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="dial-bg" cx="60" cy="60" r="54"/>
+            <circle class="dial-ring" id="ovenRing" cx="60" cy="60" r="54" transform="rotate(-90 60 60)"/>
+            <g class="dial-ticks" id="ovenTicks"></g>
+          </svg>
+          <div class="oven-num"><span id="ovenSec">90</span></div>
+        </div>
         <div class="oven-lbl">שניות בטאבון · 450°</div>
-        <div class="oven-bar"><i id="ovenBar"></i></div>
       </div>
     </div>
 
@@ -80,8 +86,9 @@
       <!-- בטאבון -->
       <div class="pane pane-oven">
         <p class="eyebrow">בטאבון</p>
-        <h2 class="display sm" id="ovenTitle">על המרדה</h2>
+        <h2 class="display sm" id="ovenTitle">שמן זית בסיבוב</h2>
         <ol class="oven-steps" id="ovenSteps">
+          <li data-s="oil">שמן זית בסיבוב</li>
           <li data-s="peel">על המרדה</li>
           <li data-s="in">פנימה, אל האש</li>
           <li data-s="baking">אפייה וסיבוב</li>

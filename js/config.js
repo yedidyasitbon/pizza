@@ -23,19 +23,19 @@ window.PIZZA_CONFIG = {
   showPrices: true,
 
   bases: [
-    { id: "red",   name: "אדומה", desc: "רוטב עגבניות ומוצרלה", price: 20 },
-    { id: "white", name: "לבנה",  desc: "מוצרלה, שמן זית ושום",  price: 20 }
+    { id: "red",   name: "אדומה", desc: "רוטב עגבניות וגבינה צהובה", price: 20 },
+    { id: "white", name: "לבנה",  desc: "גבינה צהובה, שמן זית ושום",  price: 20 }
   ],
 
   // id באנגלית קשור לצורה התלת־ממדית — לא לשנות. שם, תיאור ומחיר אפשר לשנות
   toppings: [
-    { id: "greenOlive", name: "זיתים ירוקים",  desc: "טבעות",           price: 0 },
-    { id: "kalamata",   name: "זיתי קלמטה",    desc: "חצויים לאורך",    price: 0 },
+    { id: "greenOlive", name: "זיתים ירוקים",  desc: "",           price: 0 },
+    { id: "kalamata",   name: "זיתי קלמטה",    desc: "",    price: 0 },
     { id: "tuna",       name: "טונה",          desc: "",                price: 0 },
-    { id: "onion",      name: "בצל סגול",      desc: "טבעות",           price: 0 },
-    { id: "tomato",     name: "עגבניות שרי",   desc: "חתוכות לרוחב",    price: 0 },
-    { id: "chili",      name: "פלפל חריף",     desc: "ירוק, בטבעות",    price: 0 },
-    { id: "feta",       name: "בולגרית",       desc: "קוביות",          price: 0 },
+    { id: "onion",      name: "בצל סגול",      desc: "",           price: 0 },
+    { id: "tomato",     name: "עגבניות שרי",   desc: "",    price: 0 },
+    { id: "chili",      name: "פלפל חריף",     desc: "",    price: 0 },
+    { id: "feta",       name: "בולגרית",       desc: "",          price: 0 },
     { id: "garlic",     name: "שום קונפי",     desc: "",                price: 0 }
   ]
 };
