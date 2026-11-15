@@ -3,16 +3,22 @@ export const cfg = window.PIZZA_CONFIG;
 const DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const LOCAL_KEY = 'pizza.orders.local';
 
+/* מועד סגירת ההזמנות למכירה בתאריך d */
+export function closeDate(d) {
+  const [ch, cm] = cfg.closeTime.split(':').map(Number);
+  const back = ((cfg.saleWeekday - cfg.closeWeekday + 7) % 7) || 7;
+  const c = new Date(d); c.setDate(d.getDate() - back); c.setHours(ch, cm, 0, 0);
+  return c;
+}
+/* המכירה הקרובה שעוד אפשר להזמין אליה */
 export function nextSaleDate(from = new Date()) {
-  const [ch, cm] = cfg.orderCutoff.split(':').map(Number);
   const d0 = new Date(from); d0.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 15; i++) {
     const d = new Date(d0); d.setDate(d0.getDate() + i);
-    if (d.getDay() !== cfg.saleWeekday) continue;
-    if (i === 0) { const cut = new Date(d); cut.setHours(ch, cm); if (from > cut) continue; }
-    return d;
+    if (d.getDay() === cfg.saleWeekday && from < closeDate(d)) return d;
   }
 }
+export const heDay = (d) => `יום ${DAYS[d.getDay()]}`;
 export const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 export const fromYmd = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 export const heDate = (d) => `יום ${DAYS[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}`;

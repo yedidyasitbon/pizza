@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>פיצה מהטאבון · הזמנות</title>
-  <meta name="description" content="הזמנת פיצה איטלקית מהטאבון — מכירה שבועית ביישוב">
-  <meta name="theme-color" content="#1a110c">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23d9a35f'/%3E%3Ccircle cx='32' cy='32' r='23' fill='%23b8321c'/%3E%3Ccircle cx='24' cy='26' r='5' fill='%23fbf3df'/%3E%3Ccircle cx='39' cy='35' r='6' fill='%23fbf3df'/%3E%3Ccircle cx='29' cy='42' r='4' fill='%23fbf3df'/%3E%3Ccircle cx='14' cy='22' r='2.5' fill='%232a1a10'/%3E%3Ccircle cx='50' cy='44' r='3' fill='%232a1a10'/%3E%3C/svg%3E">
+  <meta name="description" content="פיצה איטלקית מטאבון עצים — מכירה שבועית ביישוב">
+  <meta name="theme-color" content="#0b0806">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0806'/%3E%3Cpath d='M32 8c4 10 16 14 16 30a16 16 0 0 1-32 0c0-8 5-12 7-17 1 5 3 8 6 9 0-9-2-15 3-22z' fill='%23e86a2c'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700;800&family=Karantina:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&family=Suez+One&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <script type="importmap">
   { "imports": {
@@ -21,52 +21,58 @@
 <body>
 
 <header class="topbar">
-  <a class="mark" href="#studio" aria-label="למעלה">
-    <span class="mark-dot" aria-hidden="true"></span>
+  <a class="mark" href="#studio">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1.4 3.8 6 5.2 6 11a6 6 0 0 1-12 0c0-3 1.8-4.5 2.6-6.3.4 1.9 1.2 3 2.3 3.4 0-3.4-.7-5.6 1.1-8.1z"/></svg>
     <span>פיצה מהטאבון</span>
   </a>
-  <div class="sale-pill" id="salePill">המכירה הקרובה…</div>
+  <a class="top-cta" href="#order">ההזמנה שלי <span class="badge" id="cartBadge" hidden>0</span></a>
 </header>
 
 <main>
-  <!-- ===== הסטודיו: סצנה תלת־ממדית + פאנל בנייה ===== -->
+  <!-- ===== הסטודיו ===== -->
   <section class="studio" id="studio">
     <div class="stage" id="stage">
       <canvas id="pizzaCanvas" aria-label="הדמיה תלת־ממדית של הפיצה"></canvas>
+      <div class="grain" aria-hidden="true"></div>
+      <div class="fade" id="fade" aria-hidden="true"></div>
       <div class="stage-caption" id="caption" aria-live="polite"></div>
       <div class="oven-meter" id="ovenMeter" hidden>
-        <div class="oven-temp"><span id="ovenSec">90</span><small>שניות · 450°</small></div>
+        <div class="oven-num"><span id="ovenSec">90</span></div>
+        <div class="oven-lbl">שניות בטאבון · 450°</div>
         <div class="oven-bar"><i id="ovenBar"></i></div>
       </div>
-      <div class="stage-hint" id="stageHint">גררו לסובב</div>
     </div>
 
     <aside class="panel" id="panel" data-mode="intro">
-
       <!-- פתיחה -->
       <div class="pane pane-intro">
         <p class="eyebrow">מכירה שבועית ביישוב</p>
-        <h1 class="display">פיצה איטלקית<br>מהטאבון</h1>
-        <p class="lead">בצק שתופח לאט, נפתח ביד ונאפה בטאבון עצים לוהט. בונים כאן את הפיצה, בוחרים שעה — ובאים לאסוף אותה חמה.</p>
-        <button class="btn btn-fire btn-big" id="startBtn">בואו נכין פיצה</button>
-        <button class="btn-link" id="skipBtn">דלגו ישר לתוספות</button>
+        <h1 class="display">פיצה איטלקית<br><em>מטאבון עצים</em></h1>
+        <p class="lead">בצק שתופח לאט, נפתח ביד ונאפה דקה וחצי מול האש. מזמינים כאן, בוחרים שעה, ובאים לאסוף חמה.</p>
+        <dl class="facts">
+          <div><dt>הכנה ואיסוף</dt><dd id="factDay">—</dd></div>
+          <div><dt>שעות</dt><dd id="factHours">—</dd></div>
+          <div><dt>מגש</dt><dd id="factPrice">—</dd></div>
+          <div><dt>הזמנות עד</dt><dd id="factClose">—</dd></div>
+        </dl>
+        <button class="btn btn-fire" id="startBtn">להכין פיצה</button>
       </div>
 
       <!-- בנייה -->
       <div class="pane pane-build">
-        <div class="step">
-          <h2 class="step-title"><span class="step-n">1</span>בסיס</h2>
-          <div class="bases" id="bases" role="radiogroup" aria-label="בסיס"></div>
-        </div>
-        <div class="step">
-          <h2 class="step-title"><span class="step-n">2</span>תוספות <small id="topCount"></small></h2>
-          <div class="toppings" id="toppings"></div>
-        </div>
+        <section class="group">
+          <h2 class="group-title">הבסיס</h2>
+          <div class="opts" id="bases" role="radiogroup" aria-label="בסיס"></div>
+        </section>
+        <section class="group">
+          <h2 class="group-title">תוספות <span class="limit" id="topCount"></span></h2>
+          <div class="opts" id="toppings"></div>
+        </section>
         <div class="build-foot">
           <div class="price-now" id="priceNow"></div>
           <button class="btn btn-fire" id="bakeBtn">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-2.4 1.3-3.6 2-5 .3 1.5 1 2.5 2 3 0-3-.5-5.5 1-8z"/></svg>
-            לטאבון!
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1.4 3.8 6 5.2 6 11a6 6 0 0 1-12 0c0-3 1.8-4.5 2.6-6.3.4 1.9 1.2 3 2.3 3.4 0-3.4-.7-5.6 1.1-8.1z"/></svg>
+            לטאבון
           </button>
         </div>
       </div>
@@ -74,23 +80,23 @@
       <!-- בטאבון -->
       <div class="pane pane-oven">
         <p class="eyebrow">בטאבון</p>
-        <h2 class="display sm" id="ovenTitle">מכניסים לטאבון</h2>
+        <h2 class="display sm" id="ovenTitle">על המרדה</h2>
         <ol class="oven-steps" id="ovenSteps">
           <li data-s="peel">על המרדה</li>
           <li data-s="in">פנימה, אל האש</li>
           <li data-s="baking">אפייה וסיבוב</li>
-          <li data-s="out">יוצאת חמה</li>
+          <li data-s="out">יוצאת מהטאבון</li>
         </ol>
       </div>
 
       <!-- מוכנה -->
       <div class="pane pane-done">
         <p class="eyebrow">יצאה מהטאבון</p>
-        <h2 class="display sm">הפיצה נוספה להזמנה</h2>
+        <h2 class="display sm">נכנסה להזמנה</h2>
         <div class="done-card" id="doneCard"></div>
         <div class="done-actions">
-          <button class="btn btn-fire" id="moreBtn">עוד פיצה</button>
-          <a class="btn btn-ghost" href="#order" id="toOrderBtn">להשלמת ההזמנה</a>
+          <a class="btn btn-fire" href="#order">להשלמת ההזמנה</a>
+          <button class="btn btn-line" id="moreBtn">עוד מגש</button>
         </div>
       </div>
     </aside>
@@ -98,19 +104,20 @@
 
   <!-- ===== ההזמנה ===== -->
   <section class="order" id="order">
-    <div class="order-inner">
+    <div class="wrap">
       <header class="sec-head">
-        <p class="eyebrow">ההזמנה שלי</p>
-        <h2 class="display">כמה פרטים קטנים</h2>
+        <p class="eyebrow">ההזמנה</p>
+        <h2 class="display">כמה פרטים, וזהו</h2>
+        <p class="sec-sub">אין תשלום באתר. משלמים במזומן באיסוף, או בהעברה בביט / פייבוקס.</p>
       </header>
 
-      <div class="closed-note" id="closedNote" hidden>ההזמנות לשבוע הזה סגורות. נתראה במכירה הבאה!</div>
+      <div class="closed-note" id="closedNote" hidden>ההזמנות סגורות כרגע. נתראה במכירה הבאה.</div>
 
       <div class="order-grid">
         <div class="cart-box">
-          <h3 class="box-title">הפיצות</h3>
+          <h3 class="box-title">המגשים</h3>
           <ul class="cart" id="cart"></ul>
-          <p class="cart-empty" id="cartEmpty">עוד לא נאפתה פיצה. <a href="#studio">בונים אחת למעלה</a> ↑</p>
+          <p class="cart-empty" id="cartEmpty">עוד לא נאפה מגש. <a href="#studio">מכינים אחד למעלה</a></p>
           <div class="cart-total" id="cartTotal" hidden></div>
         </div>
 
@@ -122,40 +129,37 @@
           <label class="field"><span>טלפון נייד</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="050-0000000" dir="ltr" required></label>
 
           <fieldset class="field">
-            <legend>שעת איסוף <small id="slotNote"></small></legend>
+            <legend>שעת איסוף <small id="slotDay"></small></legend>
             <div class="slots" id="slots"></div>
           </fieldset>
 
           <fieldset class="field">
-            <legend>תשלום <small>(אין תשלום באתר)</small></legend>
+            <legend>תשלום</legend>
             <div class="pays">
-              <label class="pay"><input type="radio" name="payment" value="מזומן" required><span><b>מזומן</b><i>משלמים באיסוף</i></span></label>
+              <label class="pay"><input type="radio" name="payment" value="מזומן" required><span><b>מזומן</b><i>באיסוף</i></span></label>
               <label class="pay"><input type="radio" name="payment" value="ביט"><span><b>ביט</b><i class="num"></i></span></label>
               <label class="pay"><input type="radio" name="payment" value="פייבוקס"><span><b>פייבוקס</b><i class="num"></i></span></label>
             </div>
           </fieldset>
 
-          <label class="field"><span>הערות <small>(לא חובה)</small></span><textarea name="notes" rows="2" placeholder="למשל: לחתוך ל-8, בלי אורגנו…"></textarea></label>
+          <label class="field"><span>הערות <small>(לא חובה)</small></span><textarea name="notes" rows="2" placeholder="למשל: לחתוך ל-8"></textarea></label>
 
           <p class="form-error" id="formError" role="alert"></p>
-          <button class="btn btn-fire btn-big" type="submit" id="submitBtn">שליחת ההזמנה</button>
+          <button class="btn btn-fire btn-wide" type="submit" id="submitBtn">שליחת ההזמנה</button>
         </form>
       </div>
     </div>
   </section>
 
-  <!-- ===== על הפיצה ===== -->
-  <section class="about">
-    <figure class="photo">
-      <img src="img/pizza.jpg" alt="שתי פיצות מהטאבון על קרשי עץ: לבנה עם טונה וחלאפיניו, ואדומה עם עגבניות שרי וזיתים" loading="lazy">
-    </figure>
-    <div class="about-text">
+  <!-- ===== איך זה עובד ===== -->
+  <section class="how-sec">
+    <div class="wrap">
       <p class="eyebrow">איך זה עובד</p>
-      <h2 class="display">פעם בשבוע,<br>הטאבון נדלק</h2>
+      <h2 class="display">פעם בשבוע<br>הטאבון נדלק</h2>
       <ol class="how">
-        <li><b>מזמינים מראש</b> כאן באתר, עד יום המכירה.</li>
-        <li><b>בוחרים שעה</b> — כל חצי שעה יוצאת סדרה מהטאבון.</li>
-        <li><b>אוספים חמה</b> ומשלמים במזומן, או מעבירים בביט / פייבוקס.</li>
+        <li><b>מזמינים מראש</b><span id="howClose">עד יום שני בבוקר.</span></li>
+        <li><b>בוחרים שעה</b><span>כל חצי שעה יוצאת סדרה מהטאבון.</span></li>
+        <li><b>אוספים חמה</b><span>ומשלמים במזומן, בביט או בפייבוקס.</span></li>
       </ol>
     </div>
   </section>
@@ -166,11 +170,10 @@
   <a href="report.html" class="foot-admin">ניהול</a>
 </footer>
 
-<!-- אישור הזמנה -->
 <dialog class="done-dialog" id="doneDialog">
   <div class="dd-in">
-    <div class="dd-badge" aria-hidden="true">✓</div>
-    <h2 class="display sm">ההזמנה התקבלה!</h2>
+    <p class="eyebrow">תודה!</p>
+    <h2 class="display sm">ההזמנה התקבלה</h2>
     <p class="dd-no" id="ddNo"></p>
     <div id="ddBody"></div>
     <button class="btn btn-fire" id="ddClose">סגירה</button>

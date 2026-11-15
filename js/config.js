@@ -6,43 +6,36 @@ window.PIZZA_CONFIG = {
   // כל עוד ריק — ההזמנות נשמרות רק בדפדפן (מצב ניסיון)
   scriptUrl: "",
 
-  // יום המכירה בשבוע: 0=ראשון 1=שני 2=שלישי 3=רביעי 4=חמישי 5=שישי 6=שבת
-  saleWeekday: 4,
-  // עד איזו שעה ביום המכירה עצמו אפשר עוד להזמין
-  orderCutoff: "16:00",
-  // false = ההזמנות סגורות השבוע (מוצגת הודעה)
-  ordersOpen: true,
+  // ימים: 0=ראשון 1=שני 2=שלישי 3=רביעי 4=חמישי 5=שישי 6=שבת
+  saleWeekday: 2,       // יום ההכנה והאיסוף: שלישי
+  closeWeekday: 1,      // ההזמנות נסגרות ביום שני…
+  closeTime: "09:00",   // …בשעה הזו. אחרי זה האתר מקבל הזמנות לשבוע הבא
+  ordersOpen: true,     // false = ההזמנות סגורות (מוצגת הודעה)
 
   // שעות הכנה / איסוף
   timeSlots: ["17:30", "18:00", "18:30", "19:00", "19:30"],
-  // כמה פיצות לכל היותר בכל חצי שעה (הטאבון מוגבל). 0 = בלי הגבלה
+  // כמה מגשים לכל היותר בכל חצי שעה. 0 = בלי הגבלה
   maxPizzasPerSlot: 8,
+  // כמה תוספות לכל היותר למגש
+  maxToppings: 3,
 
-  // תשלום
   payPhone: "0526700461",
-
-  // מחירים בשקלים. showPrices:false מסתיר את כל המחירים מהאתר
   showPrices: true,
 
   bases: [
-    { id: "red",   name: "אדומה",  desc: "רוטב עגבניות איטלקי ומוצרלה", price: 45 },
-    { id: "white", name: "לבנה",   desc: "ביאנקה — מוצרלה, שמן זית ושום", price: 45 }
+    { id: "red",   name: "אדומה", desc: "רוטב עגבניות ומוצרלה", price: 20 },
+    { id: "white", name: "לבנה",  desc: "מוצרלה, שמן זית ושום",  price: 20 }
   ],
 
-  // התוספות. id באנגלית חייב להתאים לצורה התלת־ממדית (אל תשנו id, רק שם/מחיר)
-  // צורות קיימות: tomato, greenOlive, blackOlive, jalapeno, garlic, tuna,
-  //               onion, mushroom, corn, basil, feta
+  // id באנגלית קשור לצורה התלת־ממדית — לא לשנות. שם, תיאור ומחיר אפשר לשנות
   toppings: [
-    { id: "tomato",     name: "עגבניות שרי",   price: 5 },
-    { id: "greenOlive", name: "זיתים ירוקים",  price: 5 },
-    { id: "blackOlive", name: "זיתים שחורים",  price: 5 },
-    { id: "jalapeno",   name: "חלאפיניו",      price: 5 },
-    { id: "garlic",     name: "שום קונפי",     price: 5 },
-    { id: "onion",      name: "בצל סגול",      price: 5 },
-    { id: "mushroom",   name: "פטריות",        price: 5 },
-    { id: "corn",       name: "תירס",          price: 5 },
-    { id: "tuna",       name: "טונה",          price: 7 },
-    { id: "feta",       name: "בולגרית",       price: 6 },
-    { id: "basil",      name: "בזיליקום",      price: 3 }
+    { id: "greenOlive", name: "זיתים ירוקים",  desc: "טבעות",           price: 0 },
+    { id: "kalamata",   name: "זיתי קלמטה",    desc: "חצויים לאורך",    price: 0 },
+    { id: "tuna",       name: "טונה",          desc: "",                price: 0 },
+    { id: "onion",      name: "בצל סגול",      desc: "טבעות",           price: 0 },
+    { id: "tomato",     name: "עגבניות שרי",   desc: "חתוכות לרוחב",    price: 0 },
+    { id: "chili",      name: "פלפל חריף",     desc: "ירוק, בטבעות",    price: 0 },
+    { id: "feta",       name: "בולגרית",       desc: "קוביות",          price: 0 },
+    { id: "garlic",     name: "שום קונפי",     desc: "",                price: 0 }
   ]
 };
