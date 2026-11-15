@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>דוח הזמנות שבועי</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Karantina:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink:#2a1d15; --soft:#6f5b4b; --line:#e2d5bf; --paper:#fbf7ef; --char:#1d130d; --ember:#e3572a; --olive:#66752a; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Assistant, system-ui, sans-serif; color: var(--ink); background: #f3ece0; font-size: 16px; }
+    header { background: var(--char); color: #f3e4cc; padding: 22px 20px; }
+    .wrap { max-width: 1000px; margin: 0 auto; }
+    h1 { font-family: Karantina, sans-serif; font-size: 56px; line-height: .9; margin: 0 0 14px; }
+    .ctrl { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .ctrl input { font: inherit; padding: 9px 12px; border-radius: 10px; border: 1px solid #5a4636; background: #2b1d15; color: #f3e4cc; }
+    button { font: inherit; font-weight: 700; cursor: pointer; border-radius: 999px; padding: 9px 18px; border: 1.5px solid #f3e4cc; background: none; color: #f3e4cc; }
+    button.main { background: var(--ember); border-color: var(--ember); color: #fff; }
+    main { padding: 22px 20px 60px; }
+    .note { background: #fff4e6; border: 1px solid #f0c9a0; padding: 12px 16px; border-radius: 12px; margin-bottom: 18px; }
+    .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 22px; }
+    .tile { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+    .tile b { display: block; font-size: 28px; line-height: 1.1; }
+    .tile span { color: var(--soft); font-size: 14px; }
+    h2 { font-size: 20px; margin: 26px 0 10px; }
+    .prep { display: flex; flex-wrap: wrap; gap: 8px; }
+    .prep span { background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; }
+    .prep b { margin-inline-start: 4px; }
+    .slot { margin-top: 18px; break-inside: avoid; }
+    .slot-h { display: flex; align-items: baseline; gap: 12px; border-bottom: 3px solid var(--char); padding-bottom: 4px; margin-bottom: 8px; }
+    .slot-h .t { font-family: Karantina, sans-serif; font-size: 48px; line-height: .9; }
+    .slot-h .c { color: var(--soft); }
+    .ord { display: grid; grid-template-columns: 34px 46px 1fr auto; gap: 12px; align-items: start; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; break-inside: avoid; }
+    .ord.done { opacity: .45; }
+    .ord input { width: 22px; height: 22px; margin: 4px 0 0; accent-color: var(--olive); }
+    .no { font-weight: 800; font-size: 20px; }
+    .who { font-weight: 800; }
+    .who a { color: var(--soft); font-weight: 600; text-decoration: none; margin-inline-start: 8px; direction: ltr; unicode-bidi: isolate; }
+    .items { margin: 4px 0 0; padding: 0; list-style: none; }
+    .items li { padding: 2px 0; }
+    .items li b { color: var(--ember); }
+    .notes { margin-top: 4px; font-size: 14px; background: #fff4e6; border-radius: 8px; padding: 4px 8px; display: inline-block; }
+    .pay { text-align: left; font-size: 14px; color: var(--soft); white-space: nowrap; }
+    .pay b { display: block; color: var(--ink); font-size: 16px; }
+    .empty { color: var(--soft); padding: 30px 0; text-align: center; }
+    @media (max-width: 640px) { .tiles { grid-template-columns: 1fr 1fr; } .ord { grid-template-columns: 30px 36px 1fr; } .pay { grid-column: 3; text-align: right; } }
+    @media print {
+      header .ctrl, .note { display: none; }
+      header { background: none; color: #000; padding: 0 0 8px; border-bottom: 2px solid #000; }
+      body { background: #fff; font-size: 13px; }
+      main { padding: 10px 0; }
+      .tile, .prep span, .ord { border-color: #999; background: #fff; }
+      .ord.done { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1 id="title">דוח הזמנות</h1>
+  <div class="ctrl">
+    <input type="date" id="date" aria-label="תאריך המכירה">
+    <input type="password" id="key" placeholder="סיסמה" aria-label="סיסמה" autocomplete="current-password">
+    <button class="main" id="load">טעינה</button>
+    <button id="print">הדפסה</button>
+    <button id="csv">הורדה לאקסל</button>
+  </div>
+</div></header>
+<main class="wrap" id="out"></main>
+<script src="js/config.js"></script>
+<script type="module" src="js/report.js"></script>
+</body>
+</html>
