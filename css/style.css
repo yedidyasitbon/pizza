@@ -245,3 +245,4 @@ a { color: inherit; }
 
 /* גיבוי לדפדפנים ישנים: שום דבר לא יוצא לצדדים */
 .order, .how-sec, .foot { overflow-x: hidden; }
+.bit-go { display: flex; margin-top: 14px; text-decoration: none; }

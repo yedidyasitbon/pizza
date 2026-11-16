@@ -24,6 +24,8 @@ window.PIZZA_CONFIG = {
   maxToppings: 9,
 
   payPhone: "0526700461",
+  // קישור התשלום האישי מביט (שיתוף קוד ה-QR). ריק = בלי כפתור
+  bitLink: "https://www.bitpay.co.il/app/me/A85F5BF2-6940-3480-4AAF-129ADA88CC42DE91",
   showPrices: true,
 
   bases: [
