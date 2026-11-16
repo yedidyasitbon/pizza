@@ -5,6 +5,8 @@ const LOCAL_KEY = 'pizza.orders.local';
 
 /* מועד סגירת ההזמנות למכירה בתאריך d */
 export function closeDate(d) {
+  const ov = cfg.closeOverride?.[ymd(d)];
+  if (ov) return new Date(ov);
   const [ch, cm] = cfg.closeTime.split(':').map(Number);
   const back = ((cfg.saleWeekday - cfg.closeWeekday + 7) % 7) || 7;
   const c = new Date(d); c.setDate(d.getDate() - back); c.setHours(ch, cm, 0, 0);
