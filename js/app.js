@@ -1,32 +1,42 @@
-import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder } from './common.js?v=16';
+import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder, fetchStatus, applyStatus } from './common.js?v=17';
 
 const $ = (s, el = document) => el.querySelector(s);
 const panel = $('#panel');
 const P = cfg.showPrices;
 const MAXT = cfg.maxToppings || 99;
 const FREE = cfg.freeToppings ?? 3, EXTRA = cfg.extraToppingPrice ?? 3;
-const saleDate = nextSaleDate();
-const saleKey = ymd(saleDate);
-const close = closeDate(saleDate);
-
-/* ---------- פרטי המכירה ---------- */
+let saleDate, saleKey;
 const hours = `${cfg.timeSlots[0]} עד ${cfg.timeSlots[cfg.timeSlots.length - 1]}`;
-const closeTxt = `${heDay(close)} ${String(close.getHours()).padStart(2, '0')}:${String(close.getMinutes()).padStart(2, '0')}`;
-$('#factDay').textContent = heDate(saleDate);
 $('#factHours').textContent = hours;
 $('#factPrice').textContent = P ? `${money(cfg.bases[0].price)}` : '—';
-$('#factClose').textContent = closeTxt;
 $('#howTop').textContent = `${FREE} כלולות במחיר, כל נוספת ${money(EXTRA)}.`;
-$('#howClose').textContent = `עד ${closeTxt}, למכירה של ${heDate(saleDate)}.`;
-$('#slotDay').textContent = `· ${heDate(saleDate)}`;
-$('#footDate').textContent = `המכירה הקרובה: ${heDate(saleDate)}`;
 document.querySelectorAll('.pay .num').forEach((el) => { el.textContent = fmtPhone(cfg.payPhone); });
-if (!cfg.ordersOpen) { $('#closedNote').hidden = false; $('#submitBtn').disabled = true; }
+
+/* ---------- פרטי המכירה (מתעדכן לפי מצב הפתיחה בדף הניהול) ---------- */
+function applySale() {
+  saleDate = nextSaleDate();
+  saleKey = ymd(saleDate);
+  const close = closeDate(saleDate);
+  const closeTxt = `${heDay(close)} ${String(close.getHours()).padStart(2, '0')}:${String(close.getMinutes()).padStart(2, '0')}`;
+  $('#factDay').textContent = heDate(saleDate);
+  $('#factClose').textContent = closeTxt;
+  $('#howClose').textContent = `עד ${closeTxt}, למכירה של ${heDate(saleDate)}.`;
+  $('#slotDay').textContent = `· ${heDate(saleDate)}`;
+  $('#footDate').textContent = `המכירה הקרובה: ${heDate(saleDate)}`;
+  $('#closedNote').hidden = cfg.ordersOpen;
+  $('#submitBtn').disabled = !cfg.ordersOpen;
+}
+applySale();
+const statusP = fetchStatus().then((st) => {
+  const before = saleKey;
+  applyStatus(st); applySale();
+  if (saleKey !== before) loadSlots();
+}).catch((e) => console.warn('status', e));
 
 /* ---------- הסצנה ---------- */
 let scene = null;
 try {
-  const { createPizzaScene } = await import('./scene.js?v=16');
+  const { createPizzaScene } = await import('./scene.js?v=17');
   scene = createPizzaScene($('#pizzaCanvas'), { fadeEl: $('#fade') });
 } catch (e) {
   console.error(e);
@@ -234,7 +244,10 @@ $('#cart').addEventListener('click', (e) => {
 /* ---------- שעות ---------- */
 let slotCounts = {};
 async function loadSlots() {
-  try { slotCounts = await fetchSlotCounts(saleKey); } catch (e) { console.warn('slots', e); slotCounts = {}; }
+  const k = saleKey; let c = {};
+  try { c = await fetchSlotCounts(k); } catch (e) { console.warn('slots', e); }
+  if (k !== saleKey) return; // התאריך התחלף בינתיים
+  slotCounts = c;
   renderSlots();
 }
 function renderSlots() {
@@ -256,6 +269,8 @@ form.addEventListener('change', (e) => { e.target.closest('.slots,.pays')?.class
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const err = $('#formError'); err.textContent = '';
+  await statusP;
+  if (!cfg.ordersOpen) { err.textContent = 'ההזמנות סגורות כרגע'; return; }
   const v = Object.fromEntries(new FormData(form).entries());
   const phone = (v.phone || '').replace(/\D/g, '');
   const problems = [];
@@ -284,7 +299,7 @@ form.addEventListener('submit', async (e) => {
     cart = []; saveCart(); renderCart(); form.reset(); loadSlots();
   } catch (e2) {
     console.error(e2);
-    err.textContent = e2.message === 'FULL' ? 'השעה הזו התמלאה הרגע — בחרו שעה אחרת' : 'משהו השתבש בשליחה. נסו שוב בעוד רגע.';
+    err.textContent = e2.message === 'FULL' ? 'השעה הזו התמלאה הרגע — בחרו שעה אחרת' : e2.message === 'CLOSED' ? 'ההזמנות סגורות כרגע' : 'משהו השתבש בשליחה. נסו שוב בעוד רגע.';
     if (e2.message === 'FULL') loadSlots();
   } finally {
     btn.disabled = !cfg.ordersOpen; btn.textContent = 'שליחת ההזמנה';

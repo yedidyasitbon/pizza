@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit } from './common.js?v=16';
+import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit, closeDate, heDay, fetchStatus, applyStatus, saveStatus, thisWeekSale, regularClose, OPEN_UNTIL } from './common.js?v=17';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -217,6 +217,43 @@ $('#load').addEventListener('click', () => load());
 $('#date').addEventListener('change', () => load());
 $('#print').addEventListener('click', () => print());
 $('#csv').addEventListener('click', csv);
+/* ---------- פתיחה / סגירה של ההזמנות באתר ---------- */
+let status = {};
+const hm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+function drawStatus() {
+  applyStatus(status);
+  const now = new Date();
+  const next = nextSaleDate();
+  const wk = thisWeekSale(), wkKey = ymd(wk);
+  const wkEnd = new Date(`${wkKey}T${OPEN_UNTIL}`);
+  const late = now >= regularClose(wk) && now < wkEnd; // מועד הסגירה הרגיל של השבוע עבר
+  const line = !cfg.ordersOpen
+    ? `<div class="st off"><i></i>ההזמנות באתר סגורות<small>אף אחד לא יכול להזמין עד שתפתח שוב</small></div>`
+    : `<div class="st"><i></i>האתר מקבל הזמנות ל${esc(heDate(next))}<small>עד ${esc(heDay(closeDate(next)))} ${hm(closeDate(next))}</small></div>`;
+  let btns = '';
+  if (late && status.openSale === wkKey) btns += `<button type="button" data-s="close-week">סגירת ההזמנות ל${esc(heDay(wk))} ${wk.getDate()}.${wk.getMonth() + 1}</button>`;
+  else if (late) btns += `<button type="button" class="go" data-s="open-week">פתיחת הזמנות ל${esc(heDay(wk))} ${wk.getDate()}.${wk.getMonth() + 1}</button>`;
+  btns += status.paused
+    ? `<button type="button" class="go" data-s="resume">פתיחת ההזמנות באתר</button>`
+    : `<button type="button" data-s="pause">עצירת כל ההזמנות</button>`;
+  $('#status').innerHTML = line + btns;
+}
+async function loadStatus() {
+  try { status = await fetchStatus(); drawStatus(); } catch (e) { console.warn('status', e); }
+}
+$('#status').addEventListener('click', async (e) => {
+  const b = e.target.closest('button[data-s]'); if (!b) return;
+  const a = b.dataset.s, wkKey = ymd(thisWeekSale());
+  const patch = a === 'open-week' ? { openSale: wkKey } : a === 'close-week' ? { openSale: '' } : { paused: a === 'pause' };
+  b.disabled = true; b.textContent = 'שומר…';
+  try {
+    const res = await saveStatus($('#key').value.trim(), patch);
+    if (!res.ok) throw new Error(res.error === 'KEY' ? 'סיסמה שגויה' : res.error);
+    status = res; drawStatus(); loadWeeks($('#key').value.trim());
+  } catch (err) { alert('לא נשמר: ' + err.message); drawStatus(); }
+});
+
+loadStatus();
 if (isLocal() || $('#key').value) load();
 // רענון אוטומטי כל דקה, כדי שהזמנות חדשות יופיעו לבד
-setInterval(() => { if (!document.hidden && (isLocal() || $('#key').value)) load(true); }, 60000);
+setInterval(() => { if (!document.hidden && (isLocal() || $('#key').value)) { load(true); loadStatus(); } }, 60000);

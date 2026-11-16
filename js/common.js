@@ -100,3 +100,46 @@ export async function adminEdit(action, saleDate, orderNo, key, order) {
   const r = await fetch(cfg.scriptUrl, { method: 'POST', body: JSON.stringify({ action, saleDate, orderNo, key, order }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
   return r.json();
 }
+
+/* ---------- פתיחה / סגירה מדף הניהול ---------- */
+const STATUS_KEY = 'pizza.status.local';
+const BASE_OVERRIDE = { ...(cfg.closeOverride || {}) };
+const BASE_OPEN = cfg.ordersOpen;
+/* openSale נשאר פתוח עד יום המכירה בשעה הזו */
+export const OPEN_UNTIL = '17:00';
+
+export async function fetchStatus() {
+  if (isLocal()) { try { return JSON.parse(localStorage.getItem(STATUS_KEY) || '{}'); } catch { return {}; } }
+  const r = await fetch(`${cfg.scriptUrl}?action=status&t=${Date.now()}`, { cache: 'no-store' });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'status');
+  return j;
+}
+/* מחיל את המצב על ההגדרות (closeOverride / ordersOpen) */
+export function applyStatus(st = {}) {
+  cfg.closeOverride = { ...BASE_OVERRIDE };
+  if (st.openSale) cfg.closeOverride[st.openSale] = `${st.openSale}T${OPEN_UNTIL}`;
+  cfg.ordersOpen = BASE_OPEN && !st.paused;
+}
+export async function saveStatus(key, patch) {
+  if (isLocal()) {
+    const st = { ...(await fetchStatus()), ...patch };
+    localStorage.setItem(STATUS_KEY, JSON.stringify(st));
+    return { ok: true, ...st };
+  }
+  const r = await fetch(cfg.scriptUrl, { method: 'POST', body: JSON.stringify({ action: 'status', key, ...patch }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+  return r.json();
+}
+/* יום המכירה של השבוע הנוכחי (היום או הקרוב) */
+export function thisWeekSale(from = new Date()) {
+  const d = new Date(from); d.setHours(0, 0, 0, 0);
+  while (d.getDay() !== cfg.saleWeekday) d.setDate(d.getDate() + 1);
+  return d;
+}
+/* מועד הסגירה הרגיל, בלי חריגים */
+export function regularClose(d) {
+  const [ch, cm] = cfg.closeTime.split(':').map(Number);
+  const back = ((cfg.saleWeekday - cfg.closeWeekday + 7) % 7) || 7;
+  const c = new Date(d); c.setDate(d.getDate() - back); c.setHours(ch, cm, 0, 0);
+  return c;
+}
