@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, closeDate, ymd, heDate, money, fmtPhone, fetchSlotCounts, sendOrder } from './common.js?v=9';
+import { cfg, nextSaleDate, closeDate, ymd, heDate, money, fmtPhone, fetchSlotCounts, sendOrder } from './common.js?v=10';
 
 const $ = (s, el = document) => el.querySelector(s);
 const panel = $('#panel');
@@ -26,7 +26,7 @@ if (!cfg.ordersOpen) { $('#closedNote').hidden = false; $('#submitBtn').disabled
 /* ---------- הסצנה ---------- */
 let scene = null;
 try {
-  const { createPizzaScene } = await import('./scene.js?v=9');
+  const { createPizzaScene } = await import('./scene.js?v=10');
   scene = createPizzaScene($('#pizzaCanvas'), { fadeEl: $('#fade') });
 } catch (e) {
   console.error(e);
@@ -289,7 +289,8 @@ function showDone(o, no) {
     : `<div class="dd-pay"><div>להעביר${amount} ב${o.payment} למספר:</div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="big">${fmtPhone(cfg.payPhone)}</span><button type="button" class="copy" id="copyNum">העתקה</button></div>
         <div class="c-desc">כדאי לרשום בהעברה את השם.</div>
-        ${o.payment === 'ביט' && cfg.bitLink ? `<a class="btn btn-fire btn-wide bit-go" href="${cfg.bitLink}" target="_blank" rel="noopener">לתשלום בביט${amount}</a>` : ''}</div>`;
+        ${o.payment === 'ביט' && cfg.bitLink ? `<a class="btn btn-fire btn-wide bit-go" href="${cfg.bitLink}" target="_blank" rel="noopener">לתשלום בביט${amount}</a>` : ''}
+        ${o.payment === 'פייבוקס' && cfg.payboxLink ? `<a class="btn btn-fire btn-wide bit-go" href="${cfg.payboxLink}" target="_blank" rel="noopener">לתשלום בפייבוקס${amount}</a>` : ''}</div>`;
   $('#copyNum')?.addEventListener('click', async () => { try { await navigator.clipboard.writeText(cfg.payPhone); toast('המספר הועתק'); } catch { toast(cfg.payPhone); } });
   $('#doneDialog').showModal();
 }
