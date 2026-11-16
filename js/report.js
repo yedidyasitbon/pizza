@@ -74,7 +74,7 @@ function render(date) {
         <div><div class="who">${esc(o.firstName)} ${esc(o.lastName)}<a href="tel:${esc(o.phone)}">${esc(fmtPhone(o.phone))}</a></div>
           <ul class="items">${items}</ul>${o.notes ? `<div class="notes">${esc(o.notes)}</div>` : ''}</div>
         <div class="pay"><b>${o.total ? esc(o.total) + ' ₪' : ''}</b>${esc(o.payment)}
-          <div class="acts"><button type="button" data-act="edit">עריכה</button><button type="button" class="del" data-act="del">מחיקה</button></div></div>
+          <div class="acts"><a class="wa" href="${waLink(o)}" target="_blank" rel="noopener">וואטסאפ: מוכנה</a><button type="button" data-act="edit">עריכה</button><button type="button" class="del" data-act="del">מחיקה</button></div></div>
       </div>`;
     }
     html += '</section>';
@@ -97,6 +97,14 @@ function csv() {
   a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
   a.download = `הזמנות-פיצה-${$('#date').value}.csv`;
   a.click();
+}
+
+/* הודעת וואטסאפ ללקוח שההזמנה מוכנה */
+function waLink(o) {
+  const p = String(o.phone).replace(/\D/g, '').replace(/^0/, '972');
+  const lines = String(o.itemsText || '').split('\n').filter(Boolean);
+  const text = [`היי ${o.firstName}, הפיצה שלך מוכנה! 🍕`, ...lines, o.total ? `סה״כ ${o.total} ₪ (${o.payment})` : '', 'אפשר לבוא לאסוף 🙂'].filter(Boolean).join('\n');
+  return `https://wa.me/${p}?text=${encodeURIComponent(text)}`;
 }
 
 /* ---------- שבועות ---------- */

@@ -21,7 +21,7 @@ window.PIZZA_CONFIG = {
   // כמה תוספות לכל היותר למגש
   freeToppings: 3,          // תוספות כלולות במחיר המגש
   extraToppingPrice: 3,     // מחיר כל תוספת מעבר לכלולות
-  maxToppings: 8,
+  maxToppings: 9,
 
   payPhone: "0526700461",
   showPrices: true,
@@ -40,6 +40,7 @@ window.PIZZA_CONFIG = {
     { id: "tomato",     name: "עגבניות שרי",   desc: "",    price: 0 },
     { id: "chili",      name: "פלפל חריף",     desc: "",    price: 0 },
     { id: "feta",       name: "בולגרית",       desc: "",          price: 0 },
-    { id: "garlic",     name: "שום קונפי",     desc: "",                price: 0 }
+    { id: "garlic",     name: "שום קונפי",     desc: "",                price: 0 },
+    { id: "corn",       name: "תירס",          desc: "",                price: 0 }
   ]
 };

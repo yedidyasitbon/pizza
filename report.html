@@ -51,8 +51,9 @@
     .weeks button b { font-weight: 800; }
     .weeks button span { opacity: .7; margin-inline-start: 6px; font-size: 13px; }
     .weeks button.on { background: #f3e4cc; color: var(--char); border-color: #f3e4cc; }
-    .acts { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+    .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; justify-content: flex-end; }
     .acts button { font-size: 13px; padding: 4px 12px; color: var(--soft); border: 1px solid var(--line); }
+    .acts .wa { font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: #25d366; color: #fff; text-decoration: none; }
     .acts button.del:hover { color: #b3261e; border-color: #b3261e; }
     dialog#editDlg { border: 0; border-radius: 16px; padding: 0; width: min(560px, 94vw); max-height: 92vh; color: var(--ink); background: var(--paper); }
     dialog#editDlg::backdrop { background: rgba(20,12,8,.6); }

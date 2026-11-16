@@ -285,7 +285,7 @@ function showDone(o, no) {
   $('#ddNo').textContent = `הזמנה מס׳ ${no} · ${heDate(saleDate)} בשעה ${o.slot}`;
   const amount = P ? ` ${money(o.total)}` : '';
   $('#ddBody').innerHTML = o.payment === 'מזומן'
-    ? `<p>נתראה ב-${o.slot}. התשלום${amount} במזומן באיסוף.</p>`
+    ? `<p>הפיצה תהיה מוכנה ב-${o.slot}, תשלום במזומן.</p>`
     : `<div class="dd-pay"><div>להעביר${amount} ב${o.payment} למספר:</div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="big">${fmtPhone(cfg.payPhone)}</span><button type="button" class="copy" id="copyNum">העתקה</button></div>
         <div class="c-desc">כדאי לרשום בהעברה את השם.</div></div>`;

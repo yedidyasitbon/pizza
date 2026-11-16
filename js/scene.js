@@ -437,7 +437,8 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
       [M.onionSkin, C('#4f1d3c')], [M.onionFlesh, C('#d9a57a')],
       ...M.chili.map((m) => [m, C('#4c7d26'), 0.35]),
       [M.feta, C('#f0d7a4'), 0.5],
-      ...M.garlic.map((m) => [m, C('#b9783a')])
+      ...M.garlic.map((m) => [m, C('#b9783a')]),
+      ...M.corn.map((m) => [m, m.color.clone().lerp(C('#d9952a'), 0.45), 0.3])
     ];
     return _bl;
   }
@@ -527,11 +528,22 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
       }
       g.computeVertexNormals(); return g;
     })();
+    // תירס: גרעינים צהובים מבריקים, מעוגלים ושטוחים מלמטה
+    M.corn = ['#f4c430', '#f0b928', '#f7cf45'].map((c) => std({ color: c, roughness: 0.3, envMapIntensity: 0.8 }));
+    G.corn = (() => {
+      const g = new THREE.SphereGeometry(0.02, 14, 10); g.scale(1, 0.75, 0.85);
+      const p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        if (p.getY(i) < 0) p.setY(i, p.getY(i) * 0.35);              // תחתית שטוחה
+        const x = p.getX(i); p.setZ(i, p.getZ(i) * (1 - Math.max(0, x / 0.02) * 0.3)); // צורת טיפה
+      }
+      g.computeVertexNormals(); return g;
+    })();
   }
   const mesh = (g, m) => { const o = new THREE.Mesh(g, m); o.castShadow = true; o.receiveShadow = true; return o; };
   const pick = (a) => a[(R() * a.length) | 0];
 
-  const TOPPING_COUNT = { greenOlive: 16, kalamata: 12, tuna: 26, onion: 11, tomato: 11, chili: 22, feta: 16, garlic: 12 };
+  const TOPPING_COUNT = { greenOlive: 16, kalamata: 12, tuna: 26, onion: 11, tomato: 11, chili: 22, feta: 16, garlic: 12, corn: 22 };
   function makePiece(id) {
     initToppings();
     const g = new THREE.Group();
@@ -576,6 +588,15 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
         m.scale.setScalar(rnd(0.9, 1.15)); g.add(m); break;
       }
       case 'garlic': { const m = mesh(G.garlic, pick(M.garlic)); m.position.y = 0.032; m.rotation.set(0, R() * 6, rnd(-0.15, 0.15)); m.scale.setScalar(rnd(0.9, 1.2)); g.add(m); break; }
+      case 'corn': {
+        const n = 4 + ((R() * 5) | 0);
+        for (let i = 0; i < n; i++) {
+          const m = mesh(G.corn, pick(M.corn));
+          m.position.set(rnd(-0.07, 0.07), 0.012, rnd(-0.07, 0.07));
+          m.rotation.set(rnd(-0.2, 0.2), R() * 6, rnd(-0.2, 0.2)); m.scale.setScalar(rnd(0.85, 1.15)); g.add(m);
+        }
+        break;
+      }
       default: { const m = mesh(new THREE.SphereGeometry(0.04), M.seed); m.position.y = 0.03; g.add(m); }
     }
     const outer = new THREE.Group(); outer.add(g); outer.scale.setScalar(1.3);
@@ -698,6 +719,17 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
       const p = FF ? 1 : clamp01((now - t.t0) / t.dur); t.fn(t.ease(p), p);
       if (p >= 1) { tweens.splice(i, 1); t.res(); }
     }
+  }
+  /* מעבר רך: תמונה של הפריים הנוכחי נמוגה מעל הסצנה החדשה (בלי מסך שחור) */
+  function dissolve(sec) {
+    if (!fadeEl || FF) return;
+    renderer.render(scene, camera);
+    const c = cnv(renderer.domElement.width, renderer.domElement.height);
+    c.getContext('2d').drawImage(renderer.domElement, 0, 0);
+    c.style.cssText = `position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;opacity:1;transition:opacity ${sec / SPEED}s ease-in-out`;
+    fadeEl.parentNode.insertBefore(c, fadeEl);
+    requestAnimationFrame(() => requestAnimationFrame(() => { c.style.opacity = 0; }));
+    setTimeout(() => c.remove(), (sec / SPEED) * 1000 + 150);
   }
   function fade(to, sec) {
     if (!fadeEl) return wait(sec);
@@ -1084,13 +1116,14 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     await peelIn(2.2, 0.2, 0.45);
     onStage('in');
     const p0 = pizza.position.clone();
-    const away = tween(0.8, (t) => { pizza.position.set(p0.x, p0.y + Math.sin(t * Math.PI) * 0.2, lerp(p0.z, -5, t)); peelUnder(); }, easeIn);
-    lookTween(VIEW_OIL, VIEW_AWAY, 0.8, easeIn);
-    await wait(0.4); await fade(1, 0.35); await away;
-    // מול הטאבון
+    await Promise.all([
+      tween(0.55, (t) => { pizza.position.set(p0.x, p0.y + Math.sin(t * Math.PI) * 0.15, lerp(p0.z, -2.2, t)); peelUnder(); }, easeIn),
+      lookTween(VIEW_OIL, VIEW_AWAY, 0.55, easeIn)
+    ]);
+    // מול הטאבון — מעבר רך
+    dissolve(0.7);
     pizza.position.copy(PIZZA_MOUTH); peelUnder();
     setView(VIEW_OVEN_WIDE);
-    await fade(0, 0.3);
     await Promise.all([
       lookTween(VIEW_OVEN_WIDE, VIEW_OVEN_IN, 1.1),
       tween(1.0, (t) => { pizza.position.lerpVectors(PIZZA_MOUTH, PIZZA_IN, t); peelUnder(); }, easeInOut)
@@ -1115,17 +1148,20 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
       lookTween(curView(), VIEW_OVEN_OUT, 1.5),
       tween(1.4, (t) => { pizza.position.lerpVectors(PIZZA_IN, PIZZA_OUT, t); pizza.position.y = PIZZA_IN.y + (PIZZA_OUT.y - PIZZA_IN.y) * Math.max(0, t * 1.5 - 0.5); peelUnder(); }, easeInOut)
     ]);
-    await fade(1, 0.3);
-    // לקופסת הקרטון
+    // לקופסת הקרטון — מעבר רך, והפיצה נוחתת בעדינות בתוך הקופסה
+    dissolve(0.8);
     peel.visible = false; limits(true);
     pizzaBox.visible = true; pizzaBox.position.set(0, 0, 0); pizzaBox.userData.lid.rotation.x = -1.85;
-    pizza.position.set(0, 1.5, 0);
+    pizza.position.set(0, 0.75, 0.35);
     setView(VIEW_BOX_FAR);
-    await fade(0, 0.3);
     await Promise.all([
-      lookTween(VIEW_BOX_FAR, VIEW_BOX, 1.1),
-      tween(0.55, (t) => { pizza.position.y = lerp(1.5, BOX_FLOOR, t); }, easeIn)
+      lookTween(VIEW_BOX_FAR, VIEW_BOX, 1.4),
+      tween(1.1, (t) => {
+        pizza.position.set(0, lerp(0.75, BOX_FLOOR, t) + Math.sin(t * Math.PI) * 0.08, lerp(0.35, 0, t));
+        pizza.rotation.x = Math.sin(t * Math.PI) * 0.06;
+      }, easeInOut)
     ]);
+    pizza.rotation.x = 0;
     viewNow = VIEW_BOX;
     steam();
     controls.enabled = true;
