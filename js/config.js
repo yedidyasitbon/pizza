@@ -4,7 +4,7 @@
 window.PIZZA_CONFIG = {
   // כתובת ה-Web App של Google Apps Script (ראו הוראות-הפעלה.md)
   // כל עוד ריק — ההזמנות נשמרות רק בדפדפן (מצב ניסיון)
-  scriptUrl: "",
+  scriptUrl: "https://script.google.com/macros/s/AKfycbz5b4gpsV_m2_B2j9tt_eFwsGqI_SvY7xWDw_y5OdAWSWcxgmiF2R0LJwDThdb6uWAP/exec",
 
   // ימים: 0=ראשון 1=שני 2=שלישי 3=רביעי 4=חמישי 5=שישי 6=שבת
   saleWeekday: 2,       // יום ההכנה והאיסוף: שלישי
