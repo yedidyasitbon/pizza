@@ -165,9 +165,14 @@ $('#bakeBtn').addEventListener('click', async () => {
   if (!cfg.ordersOpen) return toast('ההזמנות סגורות כרגע');
   busy = true;
   const pizza = { base: cur.base, toppings: [...cur.toppings].sort() };
+  // נכנס לסל מיד — לא צריך לחכות לאפייה
+  let img = scene ? scene.snapshot(240) : null;
+  let item = cart.find((c) => c.base === pizza.base && c.toppings.join() === pizza.toppings.join());
+  if (item) item.qty++; else { item = { ...pizza, qty: 1, img, uid: Date.now() }; cart.push(item); }
+  saveCart(); renderCart();
+  toast('נוסף לסל');
   setMode('oven');
 
-  let img = null;
   if (scene) {
     await scene.bake((s, p) => {
       if (s === 'baking') { timerStart(); caption('דקה וחצי, 450 מעלות'); }
@@ -175,10 +180,8 @@ $('#bakeBtn').addEventListener('click', async () => {
       if (s === 'out') { timerEnd(); caption('מוכנה!', 1800); }
     });
     img = scene.snapshot(240);
+    if (cart.includes(item)) { item.img = img; saveCart(); renderCart(); }
   }
-  const same = cart.find((c) => c.base === pizza.base && c.toppings.join() === pizza.toppings.join());
-  if (same) { same.qty++; if (img) same.img = img; } else cart.push({ ...pizza, qty: 1, img, uid: Date.now() });
-  saveCart(); renderCart();
   $('#doneCard').innerHTML = `${img ? `<img src="${img}" alt="">` : ''}<div><b>מגש ${esc(baseById(pizza.base).name)}</b><div class="c-desc">${esc(pizzaDesc(pizza))}</div></div>`;
   caption('בתיאבון', 2200);
   setMode('done');
