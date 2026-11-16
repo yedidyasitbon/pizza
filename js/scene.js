@@ -192,6 +192,13 @@ function tomatoFaceCanvas() {
   spot(x, 128, 128, 18, 18, 'rgba(255,225,200,0.9)', 0.9, 0.5);
   return c;
 }
+function garlicCanvas() {
+  const c = cnv(256, 128), x = c.getContext('2d');
+  x.fillStyle = '#f1dcb6'; x.fillRect(0, 0, 256, 128);
+  for (let i = 0; i < 22; i++) spot(x, R() * 256, R() * 128, rnd(14, 46), rnd(10, 30), R() > 0.4 ? '#b8783a' : '#8f5424', rnd(0.35, 0.7), 0.25);
+  for (let i = 0; i < 20; i++) spot(x, R() * 256, R() * 128, rnd(6, 16), rnd(6, 16), '#fff6e2', 0.35, 0.3);
+  return c;
+}
 function kalaFaceCanvas() {
   const c = cnv(256, 128), x = c.getContext('2d');
   x.fillStyle = '#6f3b31'; x.fillRect(0, 0, 256, 128);
@@ -354,10 +361,11 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   const sauceTex = { red: tex(sauceCanvas('red')), white: tex(sauceCanvas('white')) };
   const sauceMat = std({ map: sauceTex.red, roughness: 0.5, bumpMap: tex(noiseCanvas(256, 12, 80, 190), { srgb: false, repeat: [3, 3] }), bumpScale: 0.8 });
   // גבינה צהובה מגוררת + שכבה נמסה
-  const SHRED_RAW = new THREE.Color('#f1cf6e'), SHRED_BAKED = new THREE.Color('#e9b24c');
-  const shredMat = std({ color: SHRED_RAW.clone(), roughness: 0.5 });
-  const shredGeo = new THREE.CapsuleGeometry(0.013, 0.085, 2, 6);
-  const meltMat = std({ map: tex(meltCanvas()), transparent: true, opacity: 0, roughness: 0.4, envMapIntensity: 0.6, depthWrite: false });
+  const SHRED_RAW = new THREE.Color('#ffffff'), SHRED_BAKED = new THREE.Color('#f2c565');
+  const shredMat = std({ color: SHRED_RAW.clone(), roughness: 0.55 });
+  const shredGeo = new THREE.CapsuleGeometry(0.012, 0.09, 2, 6); shredGeo.scale(1, 1, 0.6);
+  const meltBump = tex(noiseCanvas(256, 7, 60, 210), { srgb: false, repeat: [2, 2] });
+  const meltMat = std({ map: tex(meltCanvas()), bumpMap: meltBump, bumpScale: 1.2, transparent: true, opacity: 0, roughness: 0.32, envMapIntensity: 0.7, depthWrite: false });
 
   function paintBake(t) {
     const x = crust.mixed.getContext('2d');
@@ -368,7 +376,28 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     crustMat.bumpScale = 1.4 + t * 1.2;
     shredMat.color.copy(SHRED_RAW).lerp(SHRED_BAKED, t);
     meltMat.opacity = Math.min(0.97, t * 1.3);
-    if (pizza) pizza.userData.cheese.scale.y = 1 - 0.65 * t;
+    if (pizza) { pizza.userData.cheese.scale.y = 1 - 0.7 * t; pizza.userData.toppings.scale.y = 1 - 0.18 * t; }
+    if (G.ready) for (const [m, to, r] of bakeList()) {
+      if (!m.userData.c0) m.userData.c0 = m.color.clone(), m.userData.r0 = m.roughness;
+      m.color.copy(m.userData.c0).lerp(to, t);
+      if (r !== undefined) m.roughness = lerp(m.userData.r0, r, t);
+    }
+  }
+  let _bl = null;
+  function bakeList() {
+    if (_bl) return _bl;
+    const C = (h) => new THREE.Color(h);
+    _bl = [
+      [M.tomSkin, C('#7e1a0e'), 0.3], ...M.tomFace.map((m) => [m, C('#c9806a'), 0.3]),
+      ...M.olive.map((m) => [m, m.color.clone().multiplyScalar(0.72).lerp(C('#6b5a1e'), 0.3)]),
+      ...M.kala.map((m) => [m, m.color.clone().multiplyScalar(0.8)]),
+      ...M.tuna.map((m) => [m, C('#d6a07a'), 0.6]),
+      [M.onionSkin, C('#4f1d3c')], [M.onionFlesh, C('#d9a57a')],
+      ...M.chili.map((m) => [m, C('#4c7d26'), 0.35]),
+      [M.feta, C('#f0d7a4'), 0.5],
+      ...M.garlic.map((m) => [m, C('#b9783a')])
+    ];
+    return _bl;
   }
 
   /* ---------- גאומטריות פיצה ---------- */
@@ -444,7 +473,8 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
       G.feta = new THREE.ExtrudeGeometry(s, { depth: 0.05, bevelEnabled: true, bevelSize: 0.006, bevelThickness: 0.006, bevelSegments: 2 });
       G.feta.translate(0, 0, -0.025); }
     // שום קונפי: שיניים שלמות, שמנתי־זהוב ומבריק משמן
-    M.garlic = [std({ color: 0xe7d3a2, roughness: 0.2, envMapIntensity: 1 }), std({ color: 0xdcc093, roughness: 0.22, envMapIntensity: 1 }), std({ color: 0xe9c98f, roughness: 0.2, envMapIntensity: 1 })];
+    const gTex = [0, 1, 2].map(() => tex(garlicCanvas()));
+    M.garlic = ['#c98a45', '#bd7c3a', '#d39a55'].map((c, i) => { const m = new THREE.MeshPhysicalMaterial({ color: c, map: gTex[i], roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.12 }); m.envMapIntensity = 1.1; return m; });
     G.garlic = (() => {
       const g = new THREE.SphereGeometry(0.05, 26, 16); g.scale(1.75, 0.72, 0.95);
       const p = g.attributes.position;
@@ -519,7 +549,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     const rim = mesh(rimGeo(R() * 10), crustMat); rim.rotation.x = -Math.PI / 2; rim.position.y = 0.075;
     const sauce = mesh(discGeo(1.21, 0.025, R() * 9), sauceMat); sauce.position.y = 0.042; sauce.castShadow = false;
     const cheese = new THREE.Group(); cheese.position.y = 0.046;
-    const melt = new THREE.Mesh(discGeo(1.2, 0.03, R() * 9), meltMat); melt.position.y = 0.066; melt.receiveShadow = true;
+    const melt = new THREE.Mesh(discGeo(1.2, 0.03, R() * 9), meltMat); melt.position.y = 0.07; melt.receiveShadow = true;
     const toppings = new THREE.Group(); toppings.position.y = TOP_Y;
     const oil = new THREE.Group(); oil.position.y = TOP_Y + 0.02;
     p.add(base, rim, sauce, cheese, melt, toppings, oil);
@@ -540,6 +570,8 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
       const a = R() * Math.PI * 2, r = Math.sqrt(R()) * 1.16;
       data.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, y: rnd(0.005, 0.045), ry: R() * 6, rz: Math.PI / 2 + rnd(-0.25, 0.25), s: rnd(0.75, 1.3), d: R() * 1.1, h: rnd(1.2, 2.2) });
     }
+    const sc = ['#f6d77e', '#f2cc68', '#f8de92', '#eec25c', '#f9e3a0'].map((h) => new THREE.Color(h));
+    for (let i = 0; i < N; i++) im.setColorAt(i, sc[(R() * sc.length) | 0]);
     ud.cheese.add(im);
     rain = { im, data, start: now, done: !animated };
     writeRain(animated ? 0 : 99);
@@ -660,6 +692,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     ladle.add(bowl, rimT, sauceIn, handle);
     ladle.userData.sauceIn = sauceIn;
   }
+  ladle.scale.setScalar(1.55);
   ladle.visible = false; scene.add(ladle);
 
   /* =========================================================
@@ -668,13 +701,14 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   const bottle = new THREE.Group();
   {
     const prof = [[0, 0], [0.2, 0], [0.22, 0.03], [0.22, 0.7], [0.2, 0.82], [0.1, 0.95], [0.065, 1.05], [0.065, 1.24], [0.075, 1.26], [0.075, 1.3]].map(([x, y]) => new THREE.Vector2(x, y));
-    const glass = new THREE.Mesh(new THREE.LatheGeometry(prof, 40), new THREE.MeshPhysicalMaterial({ color: 0x5f7a2c, roughness: 0.08, metalness: 0, transparent: true, opacity: 0.45, envMapIntensity: 1.5, clearcoat: 1 }));
+    const glass = new THREE.Mesh(new THREE.LatheGeometry(prof, 40), new THREE.MeshPhysicalMaterial({ color: 0x23361a, roughness: 0.12, metalness: 0, envMapIntensity: 1.4, clearcoat: 1, clearcoatRoughness: 0.08 }));
+    glass.castShadow = true;
     const oilProf = [[0, 0.02], [0.195, 0.02], [0.205, 0.05], [0.205, 0.6], [0, 0.6]].map(([x, y]) => new THREE.Vector2(x, y));
     const oilIn = new THREE.Mesh(new THREE.LatheGeometry(oilProf, 32), std({ color: 0xa88a1c, roughness: 0.2, transparent: true, opacity: 0.85 }));
     const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.04, 0.16, 16), metal); spout.position.y = 1.36;
     const label = new THREE.Mesh(new THREE.CylinderGeometry(0.224, 0.224, 0.3, 40, 1, true), std({ color: 0xe8dcc0, roughness: 0.8 })); label.position.y = 0.38;
-    const inner = new THREE.Group(); inner.add(glass, oilIn, spout, label);
-    inner.position.y = -1.44;                          // פתח הפיה בראשית הקבוצה
+    const inner = new THREE.Group(); inner.add(glass, spout, label);
+    inner.scale.set(1, 0.68, 1); inner.position.y = -1.44 * 0.68;                          // פתח הפיה בראשית הקבוצה
     bottle.add(inner);
   }
   bottle.visible = false; scene.add(bottle);
@@ -955,22 +989,22 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     await tween(0.9, (t) => { peel.position.z = lerp(6.5, 0.2, t); }, easeOut);
     onStage('in');
     const p0 = pizza.position.clone();
-    const away = tween(1.3, (t) => { pizza.position.set(p0.x, p0.y + Math.sin(t * Math.PI) * 0.25, lerp(p0.z, -6, t)); peelUnder(); }, easeIn);
-    await wait(0.6); await fade(1, 0.6); await away;
+    const away = tween(1.0, (t) => { pizza.position.set(p0.x, p0.y + Math.sin(t * Math.PI) * 0.25, lerp(p0.z, -6, t)); peelUnder(); }, easeIn);
+    await wait(0.45); await fade(1, 0.45); await away;
     // מול הטאבון — מבט רחב
     pizza.position.copy(PIZZA_MOUTH); peelUnder();
     setView(VIEW_OVEN_WIDE);
-    await fade(0, 0.6);
+    await fade(0, 0.4);
     await Promise.all([
-      lookTween(VIEW_OVEN_WIDE, VIEW_OVEN_IN, 2.0),
-      tween(1.8, (t) => { pizza.position.lerpVectors(PIZZA_MOUTH, PIZZA_IN, t); peelUnder(); }, easeInOut)
+      lookTween(VIEW_OVEN_WIDE, VIEW_OVEN_IN, 1.4),
+      tween(1.3, (t) => { pizza.position.lerpVectors(PIZZA_MOUTH, PIZZA_IN, t); peelUnder(); }, easeInOut)
     ]);
-    await tween(0.6, (t) => { peel.position.z = lerp(PIZZA_IN.z + 0.2, PIZZA_MOUTH.z + 5, t); }, easeIn);
+    await tween(0.4, (t) => { peel.position.z = lerp(PIZZA_IN.z + 0.2, PIZZA_MOUTH.z + 5, t); }, easeIn);
     peel.visible = false;
     onStage('baking');
     await Promise.all([
-      lookTween(VIEW_OVEN_IN, VIEW_OVEN_CLOSE, 6, (t) => t),
-      tween(6, (t, raw) => {
+      lookTween(VIEW_OVEN_IN, VIEW_OVEN_CLOSE, 4, (t) => t),
+      tween(4, (t, raw) => {
         paintBake(raw);
         pizza.rotation.y = homeRot + easeInOut(clamp01((raw - 0.45) / 0.15)) * Math.PI * 0.5;
         onStage('bakeProgress', raw);
@@ -978,20 +1012,20 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     ]);
     onStage('out');
     peel.visible = true; peel.position.set(PIZZA_IN.x, PIZZA_IN.y - 0.016, PIZZA_MOUTH.z + 5);
-    await tween(0.6, (t) => { peel.position.z = lerp(PIZZA_MOUTH.z + 5, PIZZA_IN.z + 0.2, t); }, easeOut);
+    await tween(0.4, (t) => { peel.position.z = lerp(PIZZA_MOUTH.z + 5, PIZZA_IN.z + 0.2, t); }, easeOut);
     // יוצאת מהטאבון — והמצלמה מתרחקת יחד איתה
     await Promise.all([
-      lookTween(VIEW_OVEN_CLOSE, VIEW_OVEN_OUT, 2.6),
-      tween(2.4, (t) => { pizza.position.lerpVectors(PIZZA_IN, PIZZA_OUT, t); pizza.position.y = PIZZA_IN.y + (PIZZA_OUT.y - PIZZA_IN.y) * Math.max(0, t * 1.5 - 0.5); peelUnder(); }, easeInOut)
+      lookTween(VIEW_OVEN_CLOSE, VIEW_OVEN_OUT, 1.9),
+      tween(1.8, (t) => { pizza.position.lerpVectors(PIZZA_IN, PIZZA_OUT, t); pizza.position.y = PIZZA_IN.y + (PIZZA_OUT.y - PIZZA_IN.y) * Math.max(0, t * 1.5 - 0.5); peelUnder(); }, easeInOut)
     ]);
-    await fade(1, 0.5);
+    await fade(1, 0.35);
     limits(true);
     setView(VIEW_BUILD);
     pizza.position.set(0, 0.3, -6); peelUnder();
-    await fade(0, 0.5);
-    await tween(1.2, (t) => { pizza.position.set(0, lerp(0.3, 0.05, t), lerp(-6, 0, t)); peelUnder(); }, easeOut);
+    await fade(0, 0.35);
+    await tween(0.8, (t) => { pizza.position.set(0, lerp(0.3, 0.05, t), lerp(-6, 0, t)); peelUnder(); }, easeOut);
     await tween(0.25, (t) => { pizza.position.y = 0.05 * (1 - t); });
-    await tween(0.7, (t) => { peel.position.z = lerp(0.2, 6.5, t); }, easeIn);
+    await tween(0.5, (t) => { peel.position.z = lerp(0.2, 6.5, t); }, easeIn);
     peel.visible = false;
     steam();
     spin = pizza.rotation.y;

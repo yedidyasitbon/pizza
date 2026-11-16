@@ -13,8 +13,9 @@ const hours = `${cfg.timeSlots[0]} עד ${cfg.timeSlots[cfg.timeSlots.length - 1
 const closeTxt = `${heDate(close).replace(/ \d+\.\d+$/, '')} ${cfg.closeTime}`;
 $('#factDay').textContent = heDate(saleDate);
 $('#factHours').textContent = hours;
-$('#factPrice').textContent = P ? `${money(cfg.bases[0].price)}${cfg.toppings.every((t) => !t.price) ? ', תוספות חינם' : ''}` : '—';
+$('#factPrice').textContent = P ? `${money(cfg.bases[0].price)}` : '—';
 $('#factClose').textContent = closeTxt;
+$('#howTop').textContent = `עד ${cfg.maxToppings} למגש.`;
 $('#howClose').textContent = `עד ${closeTxt}, למכירה של ${heDate(saleDate)}.`;
 $('#slotDay').textContent = `· ${heDate(saleDate)}`;
 $('#footDate').textContent = `המכירה הקרובה: ${heDate(saleDate)}`;
@@ -96,7 +97,7 @@ function caption(text, ms) {
 
 /* ---------- פתיחה: תהליך ההכנה ---------- */
 let busy = false;
-const INTRO = { dough: 'כדור בצק שתפח לאט', stretch: 'פותחים ביד', cheese: 'גבינה צהובה, הרבה', ready: 'התוספות שלכם' };
+const INTRO = { dough: 'כדור בצק שתפח לאט', stretch: 'פותחים ביד', cheese: 'גבינה', ready: 'התוספות שלכם' };
 $('#startBtn').addEventListener('click', async () => {
   setMode('build'); busy = true;
   if (scene) await scene.playIntro((s) => caption(s === 'sauce' ? (cur.base === 'red' ? 'רוטב עגבניות' : 'שמן זית ושום') : INTRO[s], s === 'ready' ? 2200 : 0));
@@ -146,22 +147,16 @@ function timerEnd() {
 }
 
 /* ---------- לטאבון ---------- */
-const STAGES = ['oil', 'peel', 'in', 'baking', 'out'];
-const TITLES = { oil: 'שמן זית בסיבוב', peel: 'על המרדה', in: 'פנימה, אל האש', baking: 'נאפית מול האש', out: 'יוצאת מהטאבון' };
 $('#bakeBtn').addEventListener('click', async () => {
   if (busy) return;
   if (!cfg.ordersOpen) return toast('ההזמנות סגורות כרגע');
   busy = true;
   const pizza = { base: cur.base, toppings: [...cur.toppings].sort() };
   setMode('oven');
-  const steps = [...document.querySelectorAll('#ovenSteps li')], meter = $('#ovenMeter');
-  const mark = (s) => { const i = STAGES.indexOf(s); steps.forEach((li, k) => { li.classList.toggle('on', k === i); li.classList.toggle('ok', k < i); }); $('#ovenTitle').textContent = TITLES[s]; };
+
   let img = null;
   if (scene) {
     await scene.bake((s, p) => {
-      if (STAGES.includes(s)) mark(s);
-      if (s === 'oil') caption('שמן זית');
-      if (s === 'peel') caption('', 1);
       if (s === 'baking') { timerStart(); caption('דקה וחצי, 450 מעלות'); }
       if (s === 'bakeProgress') timerTick(p);
       if (s === 'out') { timerEnd(); caption('מוכנה!', 1800); }
