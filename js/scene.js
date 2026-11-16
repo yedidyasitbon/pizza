@@ -998,7 +998,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     ladle.visible = false;
   }
 
-  function fastForward() { if (state === 'intro') FF = true; }
+  function fastForward() { if (state === 'intro' || state === 'oven') FF = true; }
   function skipIntro() {
     if (state !== 'dough') return;
     doughBall.visible = false; pizza.visible = true; pizza.scale.setScalar(1);
@@ -1105,7 +1105,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   async function bake(onStage = () => {}) {
     if (state !== 'build') return;
     state = 'oven'; controls.enabled = false; limits(false);
-    while (drops.length || (rain && !rain.done)) await wait(0.1);
+    while (!FF && (drops.length || (rain && !rain.done))) await wait(0.1);
     const homeRot = pizza.rotation.y;
     onStage('oil');
     // המצלמה יורדת לזווית צד בזמן השמן
@@ -1164,7 +1164,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     pizza.rotation.x = 0;
     viewNow = VIEW_BOX;
     steam();
-    controls.enabled = true;
+    controls.enabled = true; FF = false;
     state = 'baked'; onStage('done');
   }
 

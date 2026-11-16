@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, closeDate, ymd, heDate, money, fmtPhone, fetchSlotCounts, sendOrder } from './common.js?v=10';
+import { cfg, nextSaleDate, closeDate, ymd, heDate, money, fmtPhone, fetchSlotCounts, sendOrder } from './common.js?v=11';
 
 const $ = (s, el = document) => el.querySelector(s);
 const panel = $('#panel');
@@ -26,7 +26,7 @@ if (!cfg.ordersOpen) { $('#closedNote').hidden = false; $('#submitBtn').disabled
 /* ---------- הסצנה ---------- */
 let scene = null;
 try {
-  const { createPizzaScene } = await import('./scene.js?v=10');
+  const { createPizzaScene } = await import('./scene.js?v=11');
   scene = createPizzaScene($('#pizzaCanvas'), { fadeEl: $('#fade') });
 } catch (e) {
   console.error(e);
@@ -171,6 +171,8 @@ $('#bakeBtn').addEventListener('click', async () => {
   if (item) item.qty++; else { item = { ...pizza, qty: 1, img, uid: Date.now() }; cart.push(item); }
   saveCart(); renderCart();
   toast('נוסף לסל');
+  $('#ovenCard').innerHTML = `${img ? `<img src="${img}" alt="">` : ''}<div><b>מגש ${esc(baseById(pizza.base).name)}</b><div class="c-desc">${esc(pizzaDesc(pizza))}</div></div>`;
+  wantMore = false;
   setMode('oven');
 
   if (scene) {
@@ -182,18 +184,23 @@ $('#bakeBtn').addEventListener('click', async () => {
     img = scene.snapshot(240);
     if (cart.includes(item)) { item.img = img; saveCart(); renderCart(); }
   }
+  if (wantMore) { busy = false; return startNext(); }
   $('#doneCard').innerHTML = `${img ? `<img src="${img}" alt="">` : ''}<div><b>מגש ${esc(baseById(pizza.base).name)}</b><div class="c-desc">${esc(pizzaDesc(pizza))}</div></div>`;
   caption('בתיאבון', 2200);
   setMode('done');
   busy = false;
 });
-$('#moreBtn').addEventListener('click', async () => {
+// "עוד מגש" בזמן האפייה: מדלגים לסוף ומתחילים מגש חדש
+let wantMore = false;
+$('#ovenMoreBtn').addEventListener('click', () => { wantMore = true; scene?.fastForward(); });
+$('#moreBtn').addEventListener('click', () => startNext());
+async function startNext() {
   if (busy) return; busy = true;
   cur.toppings = []; syncToppings(); updatePrice();
   setMode('build');
   await scene?.newPizza();
   busy = false;
-});
+}
 
 /* ---------- עגלה ---------- */
 const PLACEHOLDER = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#c99050"/><circle cx="32" cy="32" r="23" fill="#962515"/></svg>')}`;
