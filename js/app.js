@@ -4,6 +4,7 @@ const $ = (s, el = document) => el.querySelector(s);
 const panel = $('#panel');
 const P = cfg.showPrices;
 const MAXT = cfg.maxToppings || 99;
+const FREE = cfg.freeToppings ?? 3, EXTRA = cfg.extraToppingPrice ?? 3;
 const saleDate = nextSaleDate();
 const saleKey = ymd(saleDate);
 const close = closeDate(saleDate);
@@ -15,7 +16,7 @@ $('#factDay').textContent = heDate(saleDate);
 $('#factHours').textContent = hours;
 $('#factPrice').textContent = P ? `${money(cfg.bases[0].price)}` : '—';
 $('#factClose').textContent = closeTxt;
-$('#howTop').textContent = `עד ${cfg.maxToppings} למגש.`;
+$('#howTop').textContent = `${FREE} כלולות במחיר, כל נוספת ${money(EXTRA)}.`;
 $('#howClose').textContent = `עד ${closeTxt}, למכירה של ${heDate(saleDate)}.`;
 $('#slotDay').textContent = `· ${heDate(saleDate)}`;
 $('#footDate').textContent = `המכירה הקרובה: ${heDate(saleDate)}`;
@@ -39,7 +40,7 @@ try { cart = JSON.parse(sessionStorage.getItem('pizza.cart') || '[]'); } catch {
 const saveCart = () => { try { sessionStorage.setItem('pizza.cart', JSON.stringify(cart)); } catch {} };
 const baseById = (id) => cfg.bases.find((b) => b.id === id);
 const topById = (id) => cfg.toppings.find((t) => t.id === id);
-const pizzaPrice = (p) => baseById(p.base).price + p.toppings.reduce((s, id) => s + (topById(id)?.price || 0), 0);
+const pizzaPrice = (p) => baseById(p.base).price + Math.max(0, p.toppings.length - FREE) * EXTRA;
 const pizzaDesc = (p) => (p.toppings.length ? p.toppings.map((id) => topById(id).name).join(' · ') : 'בלי תוספות');
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -64,7 +65,7 @@ $('#toppings').innerHTML = cfg.toppings.map((t) => `
   <button type="button" class="opt" data-id="${t.id}" aria-pressed="false">
     <span class="tick"></span>
     <span><span class="opt-name">${esc(t.name)}</span>${t.desc ? `<span class="opt-desc">${esc(t.desc)}</span>` : ''}</span>
-    <span class="opt-price">${P && t.price ? `+${money(t.price)}` : ''}</span>
+    <span class="opt-price"></span>
   </button>`).join('');
 $('#toppings').addEventListener('click', (e) => {
   const b = e.target.closest('.opt'); if (!b || (busy && !introP)) return;
@@ -81,10 +82,13 @@ function syncToppings() {
   document.querySelectorAll('#toppings .opt').forEach((b) => {
     const on = cur.toppings.includes(b.dataset.id);
     b.setAttribute('aria-pressed', on);
+    const extra = on ? cur.toppings.indexOf(b.dataset.id) >= FREE : cur.toppings.length >= FREE;
+    b.querySelector('.opt-price').textContent = P && extra ? `+${money(EXTRA)}` : '';
     b.setAttribute('aria-disabled', full && !on);
   });
   const c = $('#topCount');
-  c.textContent = `${cur.toppings.length} מתוך ${MAXT}`;
+  const n = cur.toppings.length;
+  c.textContent = n <= FREE ? `${n} מתוך ${FREE} כלולות` : `${FREE} כלולות + ${n - FREE}`;
   c.classList.toggle('full', full);
 }
 function updatePrice() { $('#priceNow').innerHTML = P ? `<b>${money(pizzaPrice(cur))}</b> למגש` : ''; }

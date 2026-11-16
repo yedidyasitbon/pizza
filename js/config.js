@@ -17,7 +17,9 @@ window.PIZZA_CONFIG = {
   // כמה מגשים לכל היותר בכל חצי שעה. 0 = בלי הגבלה
   maxPizzasPerSlot: 8,
   // כמה תוספות לכל היותר למגש
-  maxToppings: 3,
+  freeToppings: 3,          // תוספות כלולות במחיר המגש
+  extraToppingPrice: 3,     // מחיר כל תוספת מעבר לכלולות
+  maxToppings: 8,
 
   payPhone: "0526700461",
   showPrices: true,
