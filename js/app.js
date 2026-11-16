@@ -99,7 +99,7 @@ function caption(text, ms) {
 
 /* ---------- פתיחה: תהליך ההכנה ---------- */
 let busy = false;
-const INTRO = { dough: 'כדור בצק שתפח לאט', stretch: 'פותחים ביד', cheese: 'גבינה', ready: 'התוספות שלכם' };
+const INTRO = { dough: 'כדור בצק שתפח 48 שעות', stretch: 'פותחים את הבצק', cheese: 'גבינה', ready: 'התוספות שלכם' };
 let introP = null;
 /* לחיצה על תוספת/בסיס באמצע הפתיחה מדלגת עליה */
 function skipAhead() { if (introP) scene?.fastForward(); }
