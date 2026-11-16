@@ -23,7 +23,22 @@ export function nextSaleDate(from = new Date()) {
 export const heDay = (d) => `יום ${DAYS[d.getDay()]}`;
 export const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 export const fromYmd = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
-export const heDate = (d) => `יום ${DAYS[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}`;
+/* תאריך עברי: י״ד בכסלו */
+const GEM = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'], TENS = ['', 'י', 'כ', 'ל'];
+function gem(n) {
+  if (n === 15) return 'ט״ו'; if (n === 16) return 'ט״ז';
+  const s = TENS[Math.floor(n / 10)] + GEM[n % 10];
+  return s.length > 1 ? `${s.slice(0, -1)}״${s.slice(-1)}` : `${s}׳`;
+}
+export function hebDate(d) {
+  try {
+    const parts = new Intl.DateTimeFormat('he-u-ca-hebrew', { day: 'numeric', month: 'long' }).formatToParts(d);
+    const day = Number(parts.find((p) => p.type === 'day').value);
+    const month = parts.find((p) => p.type === 'month').value;
+    return `${gem(day)} ב${month}`;
+  } catch { return ''; }
+}
+export const heDate = (d) => { const h = hebDate(d); const g = `${d.getDate()}.${d.getMonth() + 1}`; return `יום ${DAYS[d.getDay()]}, ${h ? `${h} (${g})` : g}`; };
 export const fmtPhone = (p) => { const s = String(p).replace(/\D/g, ''); return s.length === 10 ? `${s.slice(0, 3)}-${s.slice(3)}` : p; };
 export const money = (n) => `${n} ₪`;
 export const isLocal = () => !cfg.scriptUrl;

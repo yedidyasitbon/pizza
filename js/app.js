@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, closeDate, ymd, heDate, money, fmtPhone, fetchSlotCounts, sendOrder } from './common.js?v=11';
+import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder } from './common.js?v=12';
 
 const $ = (s, el = document) => el.querySelector(s);
 const panel = $('#panel');
@@ -11,7 +11,7 @@ const close = closeDate(saleDate);
 
 /* ---------- פרטי המכירה ---------- */
 const hours = `${cfg.timeSlots[0]} עד ${cfg.timeSlots[cfg.timeSlots.length - 1]}`;
-const closeTxt = `${heDate(close).replace(/ \d+\.\d+$/, '')} ${cfg.closeTime}`;
+const closeTxt = `${heDay(close)} ${String(close.getHours()).padStart(2, '0')}:${String(close.getMinutes()).padStart(2, '0')}`;
 $('#factDay').textContent = heDate(saleDate);
 $('#factHours').textContent = hours;
 $('#factPrice').textContent = P ? `${money(cfg.bases[0].price)}` : '—';
@@ -26,7 +26,7 @@ if (!cfg.ordersOpen) { $('#closedNote').hidden = false; $('#submitBtn').disabled
 /* ---------- הסצנה ---------- */
 let scene = null;
 try {
-  const { createPizzaScene } = await import('./scene.js?v=11');
+  const { createPizzaScene } = await import('./scene.js?v=12');
   scene = createPizzaScene($('#pizzaCanvas'), { fadeEl: $('#fade') });
 } catch (e) {
   console.error(e);
