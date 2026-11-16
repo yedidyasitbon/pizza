@@ -336,7 +336,9 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     ? { minPolarAngle: 0.3, maxPolarAngle: 0.95, minAzimuthAngle: -0.6, maxAzimuthAngle: 0.6 }
     : { minPolarAngle: 0, maxPolarAngle: Math.PI, minAzimuthAngle: -Infinity, maxAzimuthAngle: Infinity });
   const isTouch = matchMedia('(pointer: coarse)').matches;
-  controls.enabled = !isTouch;
+  controls.enabled = true;
+  // בטלפון: גרירה לצדדים מסובבת את הפיצה, גרירה למעלה/למטה עדיין גוללת את הדף
+  if (isTouch) { canvasEl.style.touchAction = 'pan-y'; controls.rotateSpeed = 0.8; }
 
   /* ---------- תאורה ---------- */
   scene.add(new THREE.HemisphereLight(0xffe7cc, 0x140b07, 0.32));
@@ -1086,7 +1088,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     ]);
     viewNow = VIEW_BOX;
     steam();
-    controls.enabled = !isTouch;
+    controls.enabled = true;
     state = 'baked'; onStage('done');
   }
 
