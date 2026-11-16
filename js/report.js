@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit } from './common.js?v=14';
+import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit } from './common.js?v=15';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -146,7 +146,8 @@ $('#out').addEventListener('click', async (e) => {
 function openEdit(o) {
   editing = {
     o, items: (o.items && o.items.length ? o.items : [{ base: cfg.bases[0].name, toppings: [], qty: Number(o.pizzaCount) || 1 }])
-      .map((it) => ({ base: it.base, toppings: [...(it.toppings || [])], qty: Number(it.qty) || 1 }))
+      // כל מגש בשורה משלו, כדי שאפשר יהיה לערוך כל פיצה בנפרד
+      .flatMap((it) => Array.from({ length: Math.max(1, Number(it.qty) || 1) }, () => ({ base: it.base, toppings: [...(it.toppings || [])], qty: 1 })))
   };
   drawEdit();
   $('#editDlg').showModal();
@@ -162,7 +163,7 @@ function drawEdit() {
     <div class="two"><label>טלפון<input name="phone" dir="ltr" value="${esc(keep.phone)}"></label><label>שעת הכנה<select name="slot">${opt(slots, keep.slot)}</select></label></div>
     <label>תשלום<select name="payment">${opt(pays, keep.payment)}</select></label>
     ${items.map((it, i) => `<div class="it" data-i="${i}">
-      <div class="it-h"><select data-f="base">${opt(cfg.bases.map((b) => b.name), it.base)}</select>
+      <div class="it-h"><b class="it-n">מגש ${i + 1}</b><select data-f="base">${opt(cfg.bases.map((b) => b.name), it.base)}</select>
         <input type="number" min="1" max="20" data-f="qty" value="${it.qty}" aria-label="כמות">
         ${items.length > 1 ? '<button type="button" class="x" data-f="rm">הסרה</button>' : ''}</div>
       <div class="tops">${cfg.toppings.map((t) => `<label><input type="checkbox" data-f="top" value="${esc(t.name)}" ${it.toppings.includes(t.name) ? 'checked' : ''}>${esc(t.name)}</label>`).join('')}</div>

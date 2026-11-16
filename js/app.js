@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder } from './common.js?v=14';
+import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder } from './common.js?v=15';
 
 const $ = (s, el = document) => el.querySelector(s);
 const panel = $('#panel');
@@ -26,7 +26,7 @@ if (!cfg.ordersOpen) { $('#closedNote').hidden = false; $('#submitBtn').disabled
 /* ---------- הסצנה ---------- */
 let scene = null;
 try {
-  const { createPizzaScene } = await import('./scene.js?v=14');
+  const { createPizzaScene } = await import('./scene.js?v=15');
   scene = createPizzaScene($('#pizzaCanvas'), { fadeEl: $('#fade') });
 } catch (e) {
   console.error(e);
