@@ -295,7 +295,7 @@ void main(){
    יצירת הסצנה
    ========================================================= */
 export function createPizzaScene(canvasEl, { fadeEl } = {}) {
-  const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true });
+  const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -320,6 +320,11 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   const VIEW_OVEN_IN = mkView(ov(0.35, 1.6, 4.6), ov(0, 0.75, -4.4), 1.6);
   const VIEW_OVEN_CLOSE = mkView(ov(0.15, 1.45, 3.2), ov(0, 0.6, -4.4), 1.6);
   const VIEW_OVEN_OUT = mkView(ov(3.6, 4.6, 15.5), ov(0, 0.9, 2.6), 1.5);
+  const VIEW_OIL = mkView(V(1.6, 3.2, 3.6), V(0, 0.05, 0));
+  const VIEW_AWAY = mkView(V(0.6, 2.4, 2.2), V(0, 0.1, -3.5));
+  const VIEW_BOX = mkView(V(1.3, 5.6, 6.6), V(0, 0.45, -0.7));
+  const VIEW_BOX_FAR = mkView(V(2.6, 8.2, 9.8), V(0, 0.5, -0.7));
+  let viewNow = VIEW_BUILD;
   camera.position.copy(VIEW_BUILD.pos);
 
   const controls = new OrbitControls(camera, canvasEl);
@@ -639,12 +644,16 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
 
   /* ---------- טוויני אנימציה ---------- */
   const tweens = [];
-  const tween = (sec, fn, ease = easeInOut) => new Promise((res) => tweens.push({ t0: null, dur: Math.max(0.01, sec / SPEED), fn, ease, res }));
+  let FF = false;   // דילוג על הפתיחה
+  const tween = (sec, fn, ease = easeInOut) => new Promise((res) => {
+    if (FF) { fn(1, 1); res(); return; }
+    tweens.push({ t0: null, dur: Math.max(0.01, sec / SPEED), fn, ease, res });
+  });
   const wait = (s) => tween(s, () => {});
   function updateTweens() {
     for (let i = tweens.length - 1; i >= 0; i--) {
       const t = tweens[i]; if (t.t0 === null) t.t0 = now;
-      const p = clamp01((now - t.t0) / t.dur); t.fn(t.ease(p), p);
+      const p = FF ? 1 : clamp01((now - t.t0) / t.dur); t.fn(t.ease(p), p);
       if (p >= 1) { tweens.splice(i, 1); t.res(); }
     }
   }
@@ -812,7 +821,39 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     handle.rotation.x = Math.PI / 2; handle.position.set(0, 0.0, 3.7);
     peel.add(blade, neck, handle);
   }
+  const peelMats = [];
+  peel.traverse((o) => { if (o.material) { o.material.transparent = true; peelMats.push(o.material); } });
+  const peelAlpha = (a) => { peelMats.forEach((m) => { m.opacity = a; m.depthWrite = a > 0.98; }); };
   peel.visible = false; scene.add(peel);
+
+  /* ---------- מגש קרטון ---------- */
+  const BOX_FLOOR = 0.03;
+  const pizzaBox = new THREE.Group();
+  {
+    const kraft = (light) => {
+      const c = cnv(512, 512), x = c.getContext('2d');
+      x.fillStyle = light ? '#c9a274' : '#b48a5c'; x.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 120; i++) spot(x, R() * 512, R() * 512, rnd(20, 80), rnd(20, 80), R() > 0.5 ? '#d2ad80' : '#a87d50', 0.18, 0.2);
+      for (let i = 0; i < 900; i++) { x.globalAlpha = rnd(0.05, 0.2); x.strokeStyle = R() > 0.5 ? '#8a6238' : '#e0c09a'; x.lineWidth = rnd(0.5, 1.4);
+        const px = R() * 512, py = R() * 512; x.beginPath(); x.moveTo(px, py); x.lineTo(px + rnd(-8, 8), py + rnd(-8, 8)); x.stroke(); }
+      x.globalAlpha = 1; return c;
+    };
+    const inM = std({ map: tex(kraft(true)), roughness: 0.95 }), outM = std({ map: tex(kraft(false)), roughness: 0.95 });
+    const W = 3.45, Hh = 0.32, T = 0.025;
+    const add = (g, m, x, y, z, parent = pizzaBox) => { const o = mesh(g, m); o.position.set(x, y, z); parent.add(o); return o; };
+    add(new THREE.BoxGeometry(W, T, W), inM, 0, T / 2, 0);
+    add(new THREE.BoxGeometry(W, Hh, T), inM, 0, Hh / 2, W / 2);
+    add(new THREE.BoxGeometry(W, Hh, T), inM, 0, Hh / 2, -W / 2);
+    add(new THREE.BoxGeometry(T, Hh, W), inM, W / 2, Hh / 2, 0);
+    add(new THREE.BoxGeometry(T, Hh, W), inM, -W / 2, Hh / 2, 0);
+    const lid = new THREE.Group(); lid.position.set(0, Hh, -W / 2); pizzaBox.add(lid);
+    add(new THREE.BoxGeometry(W + 0.04, T, W + 0.04), outM, 0, 0, W / 2 + 0.02, lid);
+    add(new THREE.BoxGeometry(W + 0.04, Hh * 0.8, T), outM, 0, -Hh * 0.4, W + 0.04, lid);
+    add(new THREE.BoxGeometry(T, Hh * 0.6, W * 0.9), outM, W / 2 + 0.02, -Hh * 0.3, W / 2, lid);
+    add(new THREE.BoxGeometry(T, Hh * 0.6, W * 0.9), outM, -W / 2 - 0.02, -Hh * 0.3, W / 2, lid);
+    pizzaBox.userData.lid = lid;
+  }
+  pizzaBox.visible = false; scene.add(pizzaBox);
   // הלהב מתחת לפיצה — לא חודר לתוכה
   const peelUnder = () => { peel.position.set(pizza.position.x, pizza.position.y - 0.016, pizza.position.z + 0.2); };
 
@@ -826,6 +867,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   let spin = 0;
 
   function setView(v) {
+    if (v === VIEW_BUILD || v === VIEW_BOX) viewNow = v;
     camera.position.copy(v.pos); controls.target.copy(v.target); controls.update();
     const far = v.target.x > 30; scene.fog.near = far ? 18 : 6.5; scene.fog.far = far ? 48 : 13;
   }
@@ -855,9 +897,9 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     doughBall.visible = false;
     flourPuff(V(0, 0, 0), 70, 2.2);
     onStep('sauce'); await spreadSauce();
-    onStep('cheese'); ud.cheese.visible = true; addCheese(true);
+    onStep('cheese'); ud.cheese.visible = true; addCheese(!FF);
     await wait(1.8);
-    state = 'build'; onStep('ready');
+    state = 'build'; FF = false; onStep('ready');
   }
 
   /* מצקת: נשפכת במרכז ומורחת בספירלה עם כיוון השעון עד הקצוות */
@@ -882,6 +924,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     ladle.visible = false;
   }
 
+  function fastForward() { if (state === 'intro') FF = true; }
   function skipIntro() {
     if (state !== 'dough') return;
     doughBall.visible = false; pizza.visible = true; pizza.scale.setScalar(1);
@@ -939,96 +982,110 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   /* ---------- שמן זית בסיבוב ---------- */
   async function pourOil() {
     const ud = pizza.userData;
-    const MAXD = 260;
+    const MAXD = 150;
     const drip = new THREE.InstancedMesh(oilDropGeo, oilDropMat, MAXD); drip.count = 0; ud.oil.add(drip);
     const placeBottle = (x, y, z, th, tilt) => {
       const qz = new THREE.Quaternion().setFromAxisAngle(V(0, 0, 1), tilt);
       const qy = new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), -th);
       bottle.quaternion.copy(qy.multiply(qz)); bottle.position.set(x, y, z);
     };
-    const H = 0.85, c = pizza.position;
+    const H = 0.85, c = pizza.position, R0 = 1.0, R1 = 0.5;
     bottle.visible = true;
-    // כניסה מימין למעלה
-    await tween(0.6, (t) => placeBottle(c.x + lerp(2.6, 1.0, t), lerp(2.4, H, t), c.z, 0, lerp(0.4, 2.4, t)), easeOut);
+    await tween(0.45, (t) => placeBottle(c.x + lerp(2.6, R0, t), lerp(2.4, H, t), c.z, 0, lerp(0.4, 2.4, t)), easeOut);
     oilStream.visible = true;
-    const TURNS = 1.7;
+    const TURNS = 1.25;
     let last = 0;
-    await tween(2.8, (t) => {
-      const r = lerp(1.0, 0.25, t), th = t * TURNS * Math.PI * 2;
+    await tween(1.8, (t) => {
+      const r = lerp(R0, R1, t), th = t * TURNS * Math.PI * 2;
       const x = c.x + Math.cos(th) * r, z = c.z + Math.sin(th) * r;
       placeBottle(x, H, z, th, 2.4);
       const flow = Math.min(1, t * 8, (1 - t) * 8);
       const yTop = H - 0.02, yBot = c.y + TOP_Y + 0.04;
       oilStream.position.set(x, (yTop + yBot) / 2, z); oilStream.scale.set(flow, yTop - yBot, flow);
-      // טיפות שמן נשארות על הפיצה
       const n = Math.floor(t * MAXD);
       for (let i = last; i < n && i < MAXD; i++) {
-        const tt = i / MAXD, rr = lerp(1.0, 0.25, tt) + rnd(-0.03, 0.03), a = tt * TURNS * Math.PI * 2 + rnd(-0.02, 0.02);
+        const tt = i / MAXD, rr = lerp(R0, R1, tt) + rnd(-0.03, 0.03), a = tt * TURNS * Math.PI * 2 + rnd(-0.03, 0.03);
         const local = pizza.worldToLocal(V(c.x + Math.cos(a) * rr, c.y + TOP_Y + 0.02, c.z + Math.sin(a) * rr)).sub(ud.oil.position);
-        _p.copy(local); _e.set(0, R() * 6, 0); _q.setFromEuler(_e); _s.set(rnd(1.2, 2.2), 0.18, rnd(0.8, 1.2));
+        _p.copy(local); _e.set(0, R() * 6, 0); _q.setFromEuler(_e); _s.set(rnd(0.6, 1.1), 0.12, rnd(0.45, 0.75));
         _m.compose(_p, _q, _s); drip.setMatrixAt(i, _m);
       }
       if (n > last) { drip.count = Math.min(n, MAXD); drip.instanceMatrix.needsUpdate = true; last = n; }
     }, (t) => t);
     oilStream.visible = false;
-    await tween(0.6, (t) => placeBottle(c.x + lerp(0.25, 2.8, t), lerp(H, 2.6, t), c.z, 0, lerp(2.4, 0.3, t)), easeIn);
+    await tween(0.4, (t) => placeBottle(c.x + lerp(R1, 2.8, t), lerp(H, 2.6, t), c.z, 0, lerp(2.4, 0.3, t)), easeIn);
     bottle.visible = false;
   }
 
-  /* ---------- אפייה: שמן, מרדה, טאבון, יציאה בזום־אאוט ---------- */
+  /* מרדה שנכנסת/יוצאת בהתפוגגות — בלי לעבור דרך המצלמה */
+  async function peelIn(fromZ, toZ, sec = 0.35) {
+    peel.visible = true; peelAlpha(0);
+    await tween(sec, (t) => { peel.position.z = lerp(fromZ, toZ, t); peelAlpha(t); }, easeOut);
+    peelAlpha(1);
+  }
+  async function peelOut(fromZ, toZ, sec = 0.35) {
+    await tween(sec, (t) => { peel.position.z = lerp(fromZ, toZ, t); peelAlpha(1 - t); }, easeIn);
+    peel.visible = false; peelAlpha(1);
+  }
+
+  /* ---------- אפייה: שמן, מרדה, טאבון, ואז לקופסת קרטון ---------- */
   async function bake(onStage = () => {}) {
     if (state !== 'build') return;
     state = 'oven'; controls.enabled = false; limits(false);
     while (drops.length || (rain && !rain.done)) await wait(0.1);
     const homeRot = pizza.rotation.y;
     onStage('oil');
-    await pourOil();
+    // המצלמה יורדת לזווית צד בזמן השמן
+    await Promise.all([lookTween(curView(), VIEW_OIL, 0.7), pourOil()]);
     onStage('peel');
-    await tween(0.4, (t) => { pizza.position.y = 0.05 * t; });
-    peel.visible = true; peel.rotation.y = 0; peel.position.set(0, 0.034, 6.5);
-    await tween(0.9, (t) => { peel.position.z = lerp(6.5, 0.2, t); }, easeOut);
+    await tween(0.2, (t) => { pizza.position.y = 0.05 * t; });
+    peel.rotation.y = 0; peel.position.set(0, 0.034, 2.2);
+    await peelIn(2.2, 0.2, 0.45);
     onStage('in');
     const p0 = pizza.position.clone();
-    const away = tween(1.0, (t) => { pizza.position.set(p0.x, p0.y + Math.sin(t * Math.PI) * 0.25, lerp(p0.z, -6, t)); peelUnder(); }, easeIn);
-    await wait(0.45); await fade(1, 0.45); await away;
-    // מול הטאבון — מבט רחב
+    const away = tween(0.8, (t) => { pizza.position.set(p0.x, p0.y + Math.sin(t * Math.PI) * 0.2, lerp(p0.z, -5, t)); peelUnder(); }, easeIn);
+    lookTween(VIEW_OIL, VIEW_AWAY, 0.8, easeIn);
+    await wait(0.4); await fade(1, 0.35); await away;
+    // מול הטאבון
     pizza.position.copy(PIZZA_MOUTH); peelUnder();
     setView(VIEW_OVEN_WIDE);
-    await fade(0, 0.4);
+    await fade(0, 0.3);
     await Promise.all([
-      lookTween(VIEW_OVEN_WIDE, VIEW_OVEN_IN, 1.4),
-      tween(1.3, (t) => { pizza.position.lerpVectors(PIZZA_MOUTH, PIZZA_IN, t); peelUnder(); }, easeInOut)
+      lookTween(VIEW_OVEN_WIDE, VIEW_OVEN_IN, 1.1),
+      tween(1.0, (t) => { pizza.position.lerpVectors(PIZZA_MOUTH, PIZZA_IN, t); peelUnder(); }, easeInOut)
     ]);
-    await tween(0.4, (t) => { peel.position.z = lerp(PIZZA_IN.z + 0.2, PIZZA_MOUTH.z + 5, t); }, easeIn);
-    peel.visible = false;
+    const pz = peel.position.z;
+    peelOut(pz, pz + 1.2, 0.35);
     onStage('baking');
-    await Promise.all([
-      lookTween(VIEW_OVEN_IN, VIEW_OVEN_CLOSE, 4, (t) => t),
-      tween(4, (t, raw) => {
-        paintBake(raw);
-        pizza.rotation.y = homeRot + easeInOut(clamp01((raw - 0.45) / 0.15)) * Math.PI * 0.5;
-        onStage('bakeProgress', raw);
-      }, (t) => t)
-    ]);
+    // אפייה: המצלמה מתקרבת בקשת סביב הפתח
+    const a0 = VIEW_OVEN_IN.pos, b0 = VIEW_OVEN_CLOSE.pos, ta = VIEW_OVEN_IN.target, tb = VIEW_OVEN_CLOSE.target;
+    await tween(3, (t, raw) => {
+      paintBake(raw);
+      const e = easeInOut(raw);
+      camera.position.lerpVectors(a0, b0, e); camera.position.x += Math.sin(raw * Math.PI) * 0.9;
+      controls.target.lerpVectors(ta, tb, e);
+      pizza.rotation.y = homeRot + easeInOut(clamp01((raw - 0.45) / 0.15)) * Math.PI * 0.5;
+      onStage('bakeProgress', raw);
+    }, (t) => t);
     onStage('out');
-    peel.visible = true; peel.position.set(PIZZA_IN.x, PIZZA_IN.y - 0.016, PIZZA_MOUTH.z + 5);
-    await tween(0.4, (t) => { peel.position.z = lerp(PIZZA_MOUTH.z + 5, PIZZA_IN.z + 0.2, t); }, easeOut);
-    // יוצאת מהטאבון — והמצלמה מתרחקת יחד איתה
+    await peelIn(PIZZA_IN.z + 1.4, PIZZA_IN.z + 0.2, 0.3);
+    // יוצאת מהטאבון — המצלמה מתרחקת יחד איתה
     await Promise.all([
-      lookTween(VIEW_OVEN_CLOSE, VIEW_OVEN_OUT, 1.9),
-      tween(1.8, (t) => { pizza.position.lerpVectors(PIZZA_IN, PIZZA_OUT, t); pizza.position.y = PIZZA_IN.y + (PIZZA_OUT.y - PIZZA_IN.y) * Math.max(0, t * 1.5 - 0.5); peelUnder(); }, easeInOut)
+      lookTween(curView(), VIEW_OVEN_OUT, 1.5),
+      tween(1.4, (t) => { pizza.position.lerpVectors(PIZZA_IN, PIZZA_OUT, t); pizza.position.y = PIZZA_IN.y + (PIZZA_OUT.y - PIZZA_IN.y) * Math.max(0, t * 1.5 - 0.5); peelUnder(); }, easeInOut)
     ]);
-    await fade(1, 0.35);
-    limits(true);
-    setView(VIEW_BUILD);
-    pizza.position.set(0, 0.3, -6); peelUnder();
-    await fade(0, 0.35);
-    await tween(0.8, (t) => { pizza.position.set(0, lerp(0.3, 0.05, t), lerp(-6, 0, t)); peelUnder(); }, easeOut);
-    await tween(0.25, (t) => { pizza.position.y = 0.05 * (1 - t); });
-    await tween(0.5, (t) => { peel.position.z = lerp(0.2, 6.5, t); }, easeIn);
-    peel.visible = false;
+    await fade(1, 0.3);
+    // לקופסת הקרטון
+    peel.visible = false; limits(true);
+    pizzaBox.visible = true; pizzaBox.position.set(0, 0, 0); pizzaBox.userData.lid.rotation.x = -1.85;
+    pizza.position.set(0, 1.5, 0);
+    setView(VIEW_BOX_FAR);
+    await fade(0, 0.3);
+    await Promise.all([
+      lookTween(VIEW_BOX_FAR, VIEW_BOX, 1.1),
+      tween(0.55, (t) => { pizza.position.y = lerp(1.5, BOX_FLOOR, t); }, easeIn)
+    ]);
+    viewNow = VIEW_BOX;
     steam();
-    spin = pizza.rotation.y;
     controls.enabled = !isTouch;
     state = 'baked'; onStage('done');
   }
@@ -1043,15 +1100,20 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
 
   async function newPizza() {
     const old = pizza; state = 'intro';
-    await tween(0.8, (t) => { old.position.x = lerp(0, -6, t); }, easeIn);
-    scene.remove(old);
+    const bx = pizzaBox.visible;
+    await Promise.all([
+      lookTween(curView(), VIEW_BUILD, 0.8),
+      tween(0.8, (t) => { old.position.x = lerp(0, -7, t); if (bx) pizzaBox.position.x = lerp(0, -7, t); }, easeIn)
+    ]);
+    viewNow = VIEW_BUILD;
+    scene.remove(old); pizzaBox.visible = false; pizzaBox.position.x = 0;
     pizza = buildPizza(); paintBake(0);
     pizza.position.x = 6; scene.add(pizza);
     pizza.userData.sauce.visible = false;
-    await tween(0.8, (t) => { pizza.position.x = lerp(6, 0, t); }, easeOut);
+    await tween(0.7, (t) => { pizza.position.x = lerp(6, 0, t); }, easeOut);
     flourPuff(V(0, 0, 0), 50, 2);
-    await spreadSauce(); addCheese(true);
-    await wait(1.4); state = 'build';
+    await spreadSauce(); addCheese(!FF);
+    await wait(1.0); state = 'build';
     if (pendingToppings) setToppings(pendingToppings);
   }
 
@@ -1065,7 +1127,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
     camera.aspect = w / h;
     distK = Math.min(2.1, Math.max(1, 1.1 / camera.aspect));
     camera.updateProjectionMatrix();
-    if (state !== 'oven') setView(VIEW_BUILD);
+    if (state !== 'oven') setView(viewNow);
   }
   new ResizeObserver(resize).observe(canvasEl); resize();
 
@@ -1105,7 +1167,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
       const fl = 0.8 + 0.2 * Math.sin(now * 11) * Math.sin(now * 6.7) + 0.1 * Math.sin(now * 23);
       fireLight.intensity = 110 * fl; mouthGlow.intensity = 14 * fl;
     }
-    if (state === 'build' || state === 'baked' || state === 'dough') {
+    if (state === 'build' || state === 'dough') {
       spin += dt * 0.08 * SPEED;
       if (pizza) pizza.rotation.y = spin;
     }
@@ -1116,7 +1178,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   loop();
 
   return {
-    playIntro, skipIntro, setBase, setToppings, bake, newPizza, snapshot,
+    playIntro, skipIntro, fastForward, setBase, setToppings, bake, newPizza, snapshot,
     get state() { return state; }
   };
 }

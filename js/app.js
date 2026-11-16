@@ -51,7 +51,8 @@ $('#bases').innerHTML = cfg.bases.map((b) => `
     <span class="opt-price"></span>
   </button>`).join('');
 $('#bases').addEventListener('click', (e) => {
-  const b = e.target.closest('.opt'); if (!b || busy) return;
+  const b = e.target.closest('.opt'); if (!b || (busy && !introP)) return;
+  skipAhead();
   cur.base = b.dataset.id;
   document.querySelectorAll('#bases .opt').forEach((x) => x.setAttribute('aria-checked', x === b));
   scene?.setBase(cur.base);
@@ -66,7 +67,8 @@ $('#toppings').innerHTML = cfg.toppings.map((t) => `
     <span class="opt-price">${P && t.price ? `+${money(t.price)}` : ''}</span>
   </button>`).join('');
 $('#toppings').addEventListener('click', (e) => {
-  const b = e.target.closest('.opt'); if (!b || busy) return;
+  const b = e.target.closest('.opt'); if (!b || (busy && !introP)) return;
+  skipAhead();
   const id = b.dataset.id, on = !cur.toppings.includes(id);
   if (on && cur.toppings.length >= MAXT) { toast(`עד ${MAXT} תוספות למגש`); return; }
   cur.toppings = on ? [...cur.toppings, id] : cur.toppings.filter((x) => x !== id);
@@ -98,9 +100,15 @@ function caption(text, ms) {
 /* ---------- פתיחה: תהליך ההכנה ---------- */
 let busy = false;
 const INTRO = { dough: 'כדור בצק שתפח לאט', stretch: 'פותחים ביד', cheese: 'גבינה', ready: 'התוספות שלכם' };
+let introP = null;
+/* לחיצה על תוספת/בסיס באמצע הפתיחה מדלגת עליה */
+function skipAhead() { if (introP) scene?.fastForward(); }
 $('#startBtn').addEventListener('click', async () => {
   setMode('build'); busy = true;
-  if (scene) await scene.playIntro((s) => caption(s === 'sauce' ? (cur.base === 'red' ? 'רוטב עגבניות' : 'שמן זית ושום') : INTRO[s], s === 'ready' ? 2200 : 0));
+  if (scene) {
+    introP = scene.playIntro((s) => caption(s === 'sauce' ? (cur.base === 'red' ? 'רוטב עגבניות' : 'שמן זית ושום') : INTRO[s], s === 'ready' ? 2200 : 0));
+    await introP; introP = null;
+  }
   busy = false;
   scene?.setToppings(cur.toppings);
 });
@@ -148,6 +156,7 @@ function timerEnd() {
 
 /* ---------- לטאבון ---------- */
 $('#bakeBtn').addEventListener('click', async () => {
+  if (introP) { skipAhead(); await introP; await new Promise((r) => setTimeout(r, 900)); }
   if (busy) return;
   if (!cfg.ordersOpen) return toast('ההזמנות סגורות כרגע');
   busy = true;

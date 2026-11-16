@@ -64,13 +64,13 @@ a { color: inherit; }
 .dial-ticks line { stroke: rgba(255,220,180,.18); stroke-width: 3; stroke-linecap: round; transition: stroke .3s; }
 .dial-ticks line.lit { stroke: #ffb066; filter: drop-shadow(0 0 4px #ff7a20); }
 .oven-num { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-size: 58px; line-height: 1; color: #ffe2b8; text-shadow: 0 0 24px rgba(255,120,40,.9), 0 0 60px rgba(255,80,10,.5); }
-.oven-meter.tick .oven-num { animation: tickPulse .55s cubic-bezier(.2,.9,.3,1); }
-.oven-meter.tick .oven-dial { animation: dialFlash .55s ease-out; }
+.oven-meter.tick .oven-num { animation: tickPulse .22s cubic-bezier(.2,.9,.3,1); }
+.oven-meter.tick .oven-dial { animation: dialFlash .22s ease-out; }
 .oven-meter.hot .oven-num { color: #fff1d6; }
 .oven-meter.hot .dial-ring { stroke: #ffcf70; }
 .oven-meter.end .oven-dial { animation: dialDone 1.2s ease-out forwards; }
 .oven-lbl { font-size: 13px; letter-spacing: .18em; color: #f3c79a; text-shadow: 0 1px 8px #000; }
-@keyframes tickPulse { 0% { transform: scale(1.35); filter: brightness(1.8); } 100% { transform: scale(1); filter: none; } }
+@keyframes tickPulse { 0% { transform: scale(1.28) rotate(-3deg); filter: brightness(2); } 100% { transform: scale(1); filter: none; } }
 @keyframes dialFlash { 0% { filter: drop-shadow(0 0 34px rgba(255,140,40,.95)); } 100% { filter: drop-shadow(0 0 18px rgba(255,110,30,.45)); } }
 @keyframes dialDone { 0% { transform: scale(1); opacity: 1; } 30% { transform: scale(1.18); filter: drop-shadow(0 0 50px #ffb050); } 100% { transform: scale(.9); opacity: 0; } }
 
