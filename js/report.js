@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders } from './common.js';
+import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit } from './common.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -24,6 +24,7 @@ async function load(quiet = false) {
     store.set('pizza.adminKey', key);
     orders = res.orders.sort((a, b) => a.slot.localeCompare(b.slot) || a.orderNo - b.orderNo);
     render(date);
+    loadWeeks(key);
   } catch (e) {
     if (quiet) return;
     $('#out').innerHTML = `<p class="empty">לא הצלחתי לטעון: ${esc(e.message)}</p>`;
@@ -72,7 +73,8 @@ function render(date) {
         <div class="no">#${o.orderNo}</div>
         <div><div class="who">${esc(o.firstName)} ${esc(o.lastName)}<a href="tel:${esc(o.phone)}">${esc(fmtPhone(o.phone))}</a></div>
           <ul class="items">${items}</ul>${o.notes ? `<div class="notes">${esc(o.notes)}</div>` : ''}</div>
-        <div class="pay"><b>${o.total ? esc(o.total) + ' ₪' : ''}</b>${esc(o.payment)}</div>
+        <div class="pay"><b>${o.total ? esc(o.total) + ' ₪' : ''}</b>${esc(o.payment)}
+          <div class="acts"><button type="button" data-act="edit">עריכה</button><button type="button" class="del" data-act="del">מחיקה</button></div></div>
       </div>`;
     }
     html += '</section>';
@@ -96,6 +98,111 @@ function csv() {
   a.download = `הזמנות-פיצה-${$('#date').value}.csv`;
   a.click();
 }
+
+/* ---------- שבועות ---------- */
+async function loadWeeks(key) {
+  try {
+    const res = await fetchWeeks(key);
+    if (!res.ok) return;
+    const list = res.weeks.slice();
+    const cur = $('#date').value;
+    for (const d of [ymd(nextSaleDate()), cur]) if (d && !list.some((w) => w.date === d)) list.push({ date: d, orders: 0, pizzas: 0 });
+    list.sort((a, b) => b.date.localeCompare(a.date));
+    $('#weeks').innerHTML = list.map((w) => `<button type="button" data-d="${w.date}" class="${w.date === cur ? 'on' : ''}"><b>${esc(heDate(fromYmd(w.date)))}</b><span>${w.orders} הזמנות · ${w.pizzas} פיצות</span></button>`).join('');
+  } catch {}
+}
+$('#weeks').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-d]'); if (!b) return;
+  $('#date').value = b.dataset.d; load();
+});
+
+/* ---------- מחיקה ועריכה ---------- */
+const FREE = cfg.freeToppings ?? 3, EXTRA = cfg.extraToppingPrice ?? 3;
+const basePrice = (name) => (cfg.bases.find((b) => b.name === name) || cfg.bases[0]).price;
+const itemPrice = (it) => basePrice(it.base) + Math.max(0, it.toppings.length - FREE) * EXTRA;
+let editing = null;
+
+$('#out').addEventListener('click', async (e) => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const no = Number(b.closest('.ord').dataset.no);
+  const o = orders.find((x) => Number(x.orderNo) === no); if (!o) return;
+  if (b.dataset.act === 'del') {
+    if (!confirm(`למחוק את הזמנה #${no} של ${o.firstName} ${o.lastName}?`)) return;
+    b.disabled = true; b.textContent = 'מוחק…';
+    const res = await adminEdit('delete', o.saleDate || $('#date').value, no, $('#key').value.trim());
+    if (!res.ok) { alert('המחיקה נכשלה: ' + (res.error || '')); b.disabled = false; b.textContent = 'מחיקה'; return; }
+    load(true);
+  } else openEdit(o);
+});
+
+function openEdit(o) {
+  editing = {
+    o, items: (o.items && o.items.length ? o.items : [{ base: cfg.bases[0].name, toppings: [], qty: Number(o.pizzaCount) || 1 }])
+      .map((it) => ({ base: it.base, toppings: [...(it.toppings || [])], qty: Number(it.qty) || 1 }))
+  };
+  drawEdit();
+  $('#editDlg').showModal();
+}
+function drawEdit() {
+  const { o, items } = editing, f = $('#editForm');
+  const keep = f.querySelector('[name=firstName]') ? Object.fromEntries(['firstName', 'lastName', 'phone', 'slot', 'payment', 'notes'].map((k) => [k, f.elements[k].value])) : o;
+  const opt = (arr, v) => arr.map((x) => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('');
+  const slots = [...new Set([...cfg.timeSlots, keep.slot])];
+  const pays = [...new Set(['מזומן', 'ביט', 'פייבוקס', keep.payment].filter(Boolean))];
+  f.innerHTML = `<h3>עריכת הזמנה #${o.orderNo}</h3>
+    <div class="two"><label>שם פרטי<input name="firstName" value="${esc(keep.firstName)}"></label><label>שם משפחה<input name="lastName" value="${esc(keep.lastName)}"></label></div>
+    <div class="two"><label>טלפון<input name="phone" dir="ltr" value="${esc(keep.phone)}"></label><label>שעת הכנה<select name="slot">${opt(slots, keep.slot)}</select></label></div>
+    <label>תשלום<select name="payment">${opt(pays, keep.payment)}</select></label>
+    ${items.map((it, i) => `<div class="it" data-i="${i}">
+      <div class="it-h"><select data-f="base">${opt(cfg.bases.map((b) => b.name), it.base)}</select>
+        <input type="number" min="1" max="20" data-f="qty" value="${it.qty}" aria-label="כמות">
+        ${items.length > 1 ? '<button type="button" class="x" data-f="rm">הסרה</button>' : ''}</div>
+      <div class="tops">${cfg.toppings.map((t) => `<label><input type="checkbox" data-f="top" value="${esc(t.name)}" ${it.toppings.includes(t.name) ? 'checked' : ''}>${esc(t.name)}</label>`).join('')}</div>
+    </div>`).join('')}
+    <button type="button" class="add" data-f="add">+ עוד מגש</button>
+    <label>הערות<textarea name="notes" rows="2">${esc(keep.notes)}</textarea></label>
+    <div class="ef-err" id="efErr"></div>
+    <div class="ef-foot"><span class="sum" id="efSum"></span>
+      <div class="ef-btns"><button type="button" data-f="cancel">ביטול</button><button type="button" class="main" data-f="save">שמירה</button></div></div>`;
+  sumEdit();
+}
+function sumEdit() {
+  const t = editing.items.reduce((s, it) => s + it.qty * itemPrice(it), 0);
+  const n = editing.items.reduce((s, it) => s + it.qty, 0);
+  $('#efSum').textContent = `${n} מגשים · ${t} ₪`;
+}
+$('#editForm').addEventListener('input', (e) => {
+  const box = e.target.closest('.it'); if (!box) return;
+  const it = editing.items[Number(box.dataset.i)], f = e.target.dataset.f;
+  if (f === 'base') it.base = e.target.value;
+  if (f === 'qty') it.qty = Math.max(1, Number(e.target.value) || 1);
+  if (f === 'top') it.toppings = [...box.querySelectorAll('[data-f=top]:checked')].map((c) => c.value);
+  sumEdit();
+});
+$('#editForm').addEventListener('click', async (e) => {
+  const f = e.target.dataset?.f; if (!f) return;
+  if (f === 'add') { editing.items.push({ base: cfg.bases[0].name, toppings: [], qty: 1 }); drawEdit(); }
+  if (f === 'rm') { editing.items.splice(Number(e.target.closest('.it').dataset.i), 1); drawEdit(); }
+  if (f === 'cancel') $('#editDlg').close();
+  if (f === 'save') {
+    const el = $('#editForm').elements, phone = el.phone.value.replace(/\D/g, '');
+    if (!el.firstName.value.trim()) { $('#efErr').textContent = 'חסר שם'; return; }
+    if (!/^05\d{8}$/.test(phone)) { $('#efErr').textContent = 'מספר נייד לא תקין'; return; }
+    const items = editing.items.map((it) => ({ ...it, price: itemPrice(it) }));
+    const order = {
+      firstName: el.firstName.value.trim(), lastName: el.lastName.value.trim(), phone, slot: el.slot.value,
+      payment: el.payment.value, notes: el.notes.value.trim(), items,
+      pizzaCount: items.reduce((s, it) => s + it.qty, 0),
+      total: cfg.showPrices === false ? '' : items.reduce((s, it) => s + it.qty * it.price, 0),
+      itemsText: items.map((it) => `${it.qty}× ${it.base}${it.toppings.length ? ': ' + it.toppings.join(', ') : ''}`).join('\n')
+    };
+    e.target.disabled = true; e.target.textContent = 'שומר…';
+    const res = await adminEdit('update', editing.o.saleDate || $('#date').value, editing.o.orderNo, $('#key').value.trim(), order);
+    e.target.disabled = false; e.target.textContent = 'שמירה';
+    if (!res.ok) { $('#efErr').textContent = 'השמירה נכשלה: ' + (res.error || ''); return; }
+    $('#editDlg').close(); load(true);
+  }
+});
 
 $('#load').addEventListener('click', () => load());
 $('#date').addEventListener('change', () => load());

@@ -46,9 +46,39 @@
     .pay { text-align: left; font-size: 14px; color: var(--soft); white-space: nowrap; }
     .pay b { display: block; color: var(--ink); font-size: 16px; }
     .empty { color: var(--soft); padding: 30px 0; text-align: center; }
+    .weeks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .weeks button { border-color: #5a4636; font-weight: 600; font-size: 15px; padding: 7px 14px; }
+    .weeks button b { font-weight: 800; }
+    .weeks button span { opacity: .7; margin-inline-start: 6px; font-size: 13px; }
+    .weeks button.on { background: #f3e4cc; color: var(--char); border-color: #f3e4cc; }
+    .acts { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+    .acts button { font-size: 13px; padding: 4px 12px; color: var(--soft); border: 1px solid var(--line); }
+    .acts button.del:hover { color: #b3261e; border-color: #b3261e; }
+    dialog#editDlg { border: 0; border-radius: 16px; padding: 0; width: min(560px, 94vw); max-height: 92vh; color: var(--ink); background: var(--paper); }
+    dialog#editDlg::backdrop { background: rgba(20,12,8,.6); }
+    #editForm { padding: 20px; display: grid; gap: 12px; }
+    #editForm h3 { margin: 0; font-size: 22px; }
+    #editForm .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    #editForm label { display: grid; gap: 4px; font-size: 14px; color: var(--soft); }
+    #editForm input, #editForm select, #editForm textarea { font: inherit; color: var(--ink); padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .it { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: #fff; display: grid; gap: 8px; }
+    .it-h { display: flex; gap: 8px; align-items: center; }
+    .it-h select { flex: 1; }
+    .it-h input { width: 70px; }
+    .it-h .x { color: var(--soft); border: 1px solid var(--line); padding: 6px 10px; font-size: 13px; }
+    .tops { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tops label { display: inline-flex !important; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; cursor: pointer; color: var(--ink) !important; }
+    .tops input { padding: 0; margin: 0; }
+    .ef-foot { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+    .ef-foot .sum { font-weight: 800; font-size: 18px; }
+    .ef-btns { display: flex; gap: 8px; }
+    #editForm button { color: var(--ink); border-color: var(--ink); }
+    #editForm button.main { color: #fff; border-color: var(--ember); }
+    #editForm .add { justify-self: start; font-size: 14px; padding: 6px 14px; }
+    .ef-err { color: #b3261e; font-weight: 700; min-height: 1em; }
     @media (max-width: 640px) { .tiles { grid-template-columns: 1fr 1fr; } .ord { grid-template-columns: 30px 36px 1fr; } .pay { grid-column: 3; text-align: right; } }
     @media print {
-      header .ctrl, .note { display: none; }
+      header .ctrl, .note, .weeks, .acts { display: none; }
       header { background: none; color: #000; padding: 0 0 8px; border-bottom: 2px solid #000; }
       body { background: #fff; font-size: 13px; }
       main { padding: 10px 0; }
@@ -61,13 +91,15 @@
 <header><div class="wrap">
   <h1 id="title">דוח הזמנות</h1>
   <div class="ctrl">
-    <input type="date" id="date" aria-label="תאריך המכירה">
+    <input type="date" id="date" aria-label="תאריך המכירה" hidden>
     <input type="password" id="key" placeholder="סיסמה" aria-label="סיסמה" autocomplete="current-password">
     <button class="main" id="load">טעינה</button>
     <button id="print">הדפסה</button>
     <button id="csv">הורדה לאקסל</button>
   </div>
+  <div class="weeks" id="weeks"></div>
 </div></header>
+<dialog id="editDlg"><form id="editForm" method="dialog"></form></dialog>
 <main class="wrap" id="out"></main>
 <script src="js/config.js"></script>
 <script type="module" src="js/report.js"></script>

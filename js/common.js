@@ -37,7 +37,7 @@ export async function fetchSlotCounts(date) {
     localOrders().filter((o) => o.saleDate === date).forEach((o) => { counts[o.slot] = (counts[o.slot] || 0) + o.pizzaCount; });
     return counts;
   }
-  const r = await fetch(`${cfg.scriptUrl}?action=slots&date=${encodeURIComponent(date)}`);
+  const r = await fetch(`${cfg.scriptUrl}?action=slots&date=${encodeURIComponent(date)}&t=${Date.now()}`, { cache: "no-store" });
   const j = await r.json();
   return j.counts || {};
 }
@@ -57,6 +57,31 @@ export async function sendOrder(order) {
 
 export async function fetchOrders(date, key) {
   if (isLocal()) return { ok: true, orders: localOrders().filter((o) => o.saleDate === date) };
-  const r = await fetch(`${cfg.scriptUrl}?action=orders&date=${encodeURIComponent(date)}&key=${encodeURIComponent(key)}`);
+  const r = await fetch(`${cfg.scriptUrl}?action=orders&date=${encodeURIComponent(date)}&key=${encodeURIComponent(key)}&t=${Date.now()}`, { cache: "no-store" });
+  return r.json();
+}
+
+/* רשימת השבועות שיש בהם הזמנות (לדף הניהול) */
+export async function fetchWeeks(key) {
+  if (isLocal()) {
+    const w = {};
+    localOrders().forEach((o) => { w[o.saleDate] = w[o.saleDate] || { date: o.saleDate, orders: 0, pizzas: 0 }; w[o.saleDate].orders++; w[o.saleDate].pizzas += Number(o.pizzaCount) || 0; });
+    return { ok: true, weeks: Object.values(w).sort((a, b) => b.date.localeCompare(a.date)) };
+  }
+  const r = await fetch(`${cfg.scriptUrl}?action=weeks&key=${encodeURIComponent(key)}&t=${Date.now()}`, { cache: "no-store" });
+  return r.json();
+}
+
+/* מחיקה / עריכה של הזמנה (לדף הניהול) */
+export async function adminEdit(action, saleDate, orderNo, key, order) {
+  if (isLocal()) {
+    let all = localOrders();
+    const i = all.findIndex((o) => o.saleDate === saleDate && Number(o.orderNo) === Number(orderNo));
+    if (i < 0) return { ok: false, error: 'NOTFOUND' };
+    if (action === 'delete') all.splice(i, 1); else all[i] = { ...all[i], ...order };
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(all));
+    return { ok: true };
+  }
+  const r = await fetch(cfg.scriptUrl, { method: 'POST', body: JSON.stringify({ action, saleDate, orderNo, key, order }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
   return r.json();
 }

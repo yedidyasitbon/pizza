@@ -148,15 +148,40 @@ function crustCanvases() {
 function sauceCanvas(kind) {
   const S = 1024, c = cnv(S, S), x = c.getContext('2d');
   if (kind === 'red') {
-    x.fillStyle = '#962515'; x.fillRect(0, 0, S, S);
-    for (let i = 0; i < 400; i++) spot(x, R() * S, R() * S, rnd(10, 60), rnd(10, 60), R() > 0.5 ? '#b8381d' : '#6e170b', 0.3, 0.2);
-    for (let i = 0; i < 80; i++) spot(x, R() * S, R() * S, rnd(6, 20), rnd(6, 20), '#d8642e', 0.25, 0.3);
-    speckle(x, S, S, 700, ['#2f3916', '#43501c'], 0.8, 2.2, 0.85);
+    // רוטב עגבניות אמיתי: כתום־אדום, מבריק, עם סימני מריחה בסיבוב
+    x.fillStyle = '#c93a17'; x.fillRect(0, 0, S, S);
+    for (let i = 0; i < 420; i++) spot(x, R() * S, R() * S, rnd(10, 70), rnd(10, 70), R() > 0.45 ? '#dc4c1f' : '#ad2a10', 0.28, 0.2);
+    swirl(x, S, ['rgba(240,110,60,0.22)', 'rgba(150,32,12,0.22)'], 2.2);
+    for (let i = 0; i < 160; i++) spot(x, R() * S, R() * S, rnd(3, 9), rnd(3, 9), '#e8683a', 0.35, 0.4);
+    speckle(x, S, S, 120, ['#4a3a14', '#5b4a1a'], 0.6, 1.4, 0.6);
   } else {
     x.fillStyle = '#efe2c4'; x.fillRect(0, 0, S, S);
     for (let i = 0; i < 200; i++) spot(x, R() * S, R() * S, rnd(12, 70), rnd(12, 70), R() > 0.4 ? '#dcb862' : '#f7efdc', 0.3, 0.2);
     speckle(x, S, S, 700, ['#2a2420', '#4e4236'], 0.6, 1.7, 0.8);
   }
+  return c;
+}
+/* פסים בסיבוב, כמו רוטב שנמרח בגב המצקת */
+function swirl(x, S, colors, turns) {
+  x.save(); x.lineCap = 'round';
+  for (let k = 0; k < 26; k++) {
+    const r0 = rnd(20, 470), a0 = R() * 7, span = rnd(1.2, 3.4);
+    x.strokeStyle = colors[k % colors.length]; x.lineWidth = rnd(6, 22);
+    x.beginPath();
+    for (let a = 0; a <= span; a += 0.04) {
+      const r = r0 + (a / span) * rnd(-4, 4) * turns + Math.sin(a * 5 + k) * 4;
+      const px = S / 2 + Math.cos(a0 + a) * r, py = S / 2 + Math.sin(a0 + a) * r;
+      a === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+    }
+    x.stroke();
+  }
+  x.restore();
+}
+function sauceBumpCanvas() {
+  const S = 512, c = noiseCanvas(S, 10, 95, 165), x = c.getContext('2d');
+  x.save(); x.scale(0.5, 0.5);
+  swirl(x, 1024, ['rgba(235,235,235,0.55)', 'rgba(40,40,40,0.45)'], 2.2);
+  x.restore();
   return c;
 }
 function meltCanvas() {
@@ -366,11 +391,21 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   const doughRaw = new THREE.Color('#dcc39a'), doughBaked = new THREE.Color('#c99050');
   const baseMat = std({ color: doughRaw.clone(), roughness: 0.9 });
   const sauceTex = { red: tex(sauceCanvas('red')), white: tex(sauceCanvas('white')) };
-  const sauceMat = std({ map: sauceTex.red, roughness: 0.5, bumpMap: tex(noiseCanvas(256, 12, 80, 190), { srgb: false, repeat: [3, 3] }), bumpScale: 0.8 });
+  const sauceMat = std({ map: sauceTex.red, roughness: 0.28, envMapIntensity: 0.7, bumpMap: tex(sauceBumpCanvas(), { srgb: false }), bumpScale: 2.2 });
   // גבינה צהובה מגוררת + שכבה נמסה
-  const SHRED_RAW = new THREE.Color('#ffffff'), SHRED_BAKED = new THREE.Color('#f2c565');
-  const shredMat = std({ color: SHRED_RAW.clone(), roughness: 0.55 });
-  const shredGeo = new THREE.CapsuleGeometry(0.012, 0.09, 2, 6); shredGeo.scale(1, 1, 0.6);
+  const SHRED_RAW = new THREE.Color('#ffffff'), SHRED_BAKED = new THREE.Color('#f0c463');
+  const shredMat = std({ color: SHRED_RAW.clone(), roughness: 0.42, envMapIntensity: 0.5 });
+  // שבבי גבינה מגוררת: עבים, מעוגלים ומתולתלים — כמה צורות שונות
+  const shredGeos = [0, 1, 2, 3].map((k) => {
+    const L = rnd(0.15, 0.22), pts = [];
+    for (let i = 0; i <= 6; i++) {
+      const u = i / 6;
+      pts.push(new THREE.Vector3((u - 0.5) * L, Math.sin(u * Math.PI) * rnd(0.004, 0.012), Math.sin(u * Math.PI * (1.2 + k * 0.35) + k) * rnd(0.012, 0.03)));
+    }
+    const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.0145, 6, false);
+    g.scale(1, 0.75, 1);
+    return g;
+  });
   const meltBump = tex(noiseCanvas(256, 7, 60, 210), { srgb: false, repeat: [2, 2] });
   const meltMat = std({ map: tex(meltCanvas()), bumpMap: meltBump, bumpScale: 1.2, transparent: true, opacity: 0, roughness: 0.32, envMapIntensity: 0.7, depthWrite: false });
 
@@ -569,23 +604,27 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   function addCheese(animated) {
     const ud = pizza.userData;
     ud.cheese.clear();
-    const N = baseKind === 'white' ? 2600 : 2200;
-    const im = new THREE.InstancedMesh(shredGeo, shredMat, N);
-    im.castShadow = true; im.receiveShadow = true;
-    const data = [];
-    for (let i = 0; i < N; i++) {
-      const a = R() * Math.PI * 2, r = Math.sqrt(R()) * 1.16;
-      data.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, y: rnd(0.005, 0.045), ry: R() * 6, rz: Math.PI / 2 + rnd(-0.25, 0.25), s: rnd(0.75, 1.3), d: R() * 1.1, h: rnd(1.2, 2.2) });
-    }
-    const sc = ['#f6d77e', '#f2cc68', '#f8de92', '#eec25c', '#f9e3a0'].map((h) => new THREE.Color(h));
-    for (let i = 0; i < N; i++) im.setColorAt(i, sc[(R() * sc.length) | 0]);
-    ud.cheese.add(im);
-    rain = { im, data, start: now, done: !animated };
+    const N = (baseKind === 'white' ? 1500 : 1300) / shredGeos.length | 0;
+    const sc = ['#f3d277', '#efca68', '#f6da88', '#eac160', '#f5d680'].map((h) => new THREE.Color(h));
+    const parts = shredGeos.map((geo) => {
+      const im = new THREE.InstancedMesh(geo, shredMat, N);
+      im.castShadow = true; im.receiveShadow = true;
+      const data = [];
+      for (let i = 0; i < N; i++) {
+        const a = R() * Math.PI * 2, r = Math.sqrt(R()) * 1.14;
+        data.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, y: rnd(0.008, 0.05), ry: R() * 6, rz: rnd(-0.3, 0.3), s: rnd(0.75, 1.25), d: R() * 1.1, h: rnd(1.2, 2.2) });
+        im.setColorAt(i, sc[(R() * sc.length) | 0]);
+      }
+      ud.cheese.add(im);
+      return { im, data };
+    });
+    rain = { parts, start: now, done: !animated };
     writeRain(animated ? 0 : 99);
   }
   const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(), _p = new THREE.Vector3();
   function writeRain(t) {
-    const { im, data } = rain; let all = true;
+    let all = true;
+    for (const { im, data } of rain.parts) {
     for (let i = 0; i < data.length; i++) {
       const d = data[i], f = clamp01((t - d.d) / 0.55 * SPEED);
       if (f < 1) all = false;
@@ -595,6 +634,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
       _p.set(d.x, y, d.z); _m.compose(_p, _q, _s); im.setMatrixAt(i, _m);
     }
     im.instanceMatrix.needsUpdate = true;
+    }
     if (all) rain.done = true;
   }
 
@@ -697,7 +737,7 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   {
     const bowl = mesh(new THREE.SphereGeometry(0.2, 32, 14, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), metal); bowl.position.y = 0.2;
     const rimT = mesh(new THREE.TorusGeometry(0.2, 0.01, 8, 40), metal); rimT.rotation.x = Math.PI / 2; rimT.position.y = 0.2;
-    const sauceIn = mesh(new THREE.CircleGeometry(0.185, 32), std({ color: 0x8e2314, roughness: 0.4 })); sauceIn.rotation.x = -Math.PI / 2; sauceIn.position.y = 0.17;
+    const sauceIn = mesh(new THREE.CircleGeometry(0.185, 32), std({ color: 0xc23716, roughness: 0.25, envMapIntensity: 0.7 })); sauceIn.rotation.x = -Math.PI / 2; sauceIn.position.y = 0.17;
     const handle = mesh(new THREE.CylinderGeometry(0.018, 0.018, 1.7, 10), metal);
     handle.position.set(0.95, 0.75, 0); handle.rotation.z = -1.0;
     ladle.add(bowl, rimT, sauceIn, handle);
