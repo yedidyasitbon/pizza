@@ -5,15 +5,18 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
 
 $('#date').value = ymd(nextSaleDate());
-$('#key').value = store.get('pizza.adminKey') || '';
+// קישור אישי: report.html#k=הסיסמה — נכנסים בלי להקליד
+const hk = new URLSearchParams(location.hash.slice(1)).get('k');
+if (hk) store.set('pizza.adminKey', hk);
+$('#key').value = hk || store.get('pizza.adminKey') || '';
 if (isLocal()) $('#key').style.display = 'none';
 
 let orders = [];
 
-async function load() {
+async function load(quiet = false) {
   const date = $('#date').value;
   $('#title').textContent = `דוח הזמנות · ${heDate(fromYmd(date))}`;
-  $('#out').innerHTML = '<p class="empty">טוען…</p>';
+  if (!quiet) $('#out').innerHTML = '<p class="empty">טוען…</p>';
   try {
     const key = $('#key').value.trim();
     const res = await fetchOrders(date, key);
@@ -22,6 +25,7 @@ async function load() {
     orders = res.orders.sort((a, b) => a.slot.localeCompare(b.slot) || a.orderNo - b.orderNo);
     render(date);
   } catch (e) {
+    if (quiet) return;
     $('#out').innerHTML = `<p class="empty">לא הצלחתי לטעון: ${esc(e.message)}</p>`;
   }
 }
@@ -93,8 +97,10 @@ function csv() {
   a.click();
 }
 
-$('#load').addEventListener('click', load);
-$('#date').addEventListener('change', load);
+$('#load').addEventListener('click', () => load());
+$('#date').addEventListener('change', () => load());
 $('#print').addEventListener('click', () => print());
 $('#csv').addEventListener('click', csv);
 if (isLocal() || $('#key').value) load();
+// רענון אוטומטי כל דקה, כדי שהזמנות חדשות יופיעו לבד
+setInterval(() => { if (!document.hidden && (isLocal() || $('#key').value)) load(true); }, 60000);
