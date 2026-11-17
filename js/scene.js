@@ -1020,63 +1020,87 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   const heroTilt = new THREE.Group(); hero.add(heroTilt);
   const heroPizza = new THREE.Group(); heroTilt.add(heroPizza);
   {
-    const RR = 1.24, RP = 1.53;   // RP: רדיוס התמונה בעולם (כולל הקרום)
+    const RP = 1.53; let photoReady = () => {};   // RP: רדיוס התמונה בעולם (כולל הקרום)
     // תמונה אמיתית של פיצה מהטאבון: מיישרים את האליפסה (צולמה בזווית) לעיגול, מבט מלמעלה
     const photoCv = cnv(1024, 1024);
     const photoTex = tex(photoCv);
-    const photoMat = std({ map: photoTex, roughness: 0.7, envMapIntensity: 0.15, emissive: 0xffffff, emissiveMap: photoTex, emissiveIntensity: 0.2 });
+    // צבעי התמונה כמו שהם (בלי טון־מיפינג שמבהיר), ותאורה רק בשביל צל ונפח
+    const photoMat = std({ map: photoTex, color: 0x6a6a6a, roughness: 0.75, envMapIntensity: 0.1, emissive: 0xffffff, emissiveMap: photoTex, emissiveIntensity: 0.62,
+      bumpMap: tex(photoCv, { srgb: false }), bumpScale: 1.2 });
+    photoMat.toneMapped = false;
+    photoMat.bumpMap.source = photoTex.source;
     {
       const img = new Image();
       img.onload = () => {
         const x = photoCv.getContext('2d');
-        // אליפסת הפיצה בתמונה: מרכז (390,259), זווית 32.3°, צירים 303/201
-        const cx = 390, cy = 259, th = 32.3 * Math.PI / 180, a1 = 303, a2 = 201;
+        // אליפסת הפיצה בתמונה: מרכז (390,834), זווית −11.1°, צירים 397/320
+        const cx = 390, cy = 834, th = -11.1 * Math.PI / 180, a1 = 397, a2 = 320;
         x.save(); x.translate(512, 512); x.rotate(th); x.scale(506 / a1, 506 / a2); x.rotate(-th); x.translate(-cx, -cy);
         x.drawImage(img, 0, 0); x.restore();
         // מחוץ לעיגול — צבע הקרום, שלא יופיע הקרש
         x.globalCompositeOperation = 'destination-in';
-        const g = x.createRadialGradient(512, 512, 470, 512, 512, 512); g.addColorStop(0, '#000'); g.addColorStop(1, 'rgba(0,0,0,0)');
+        const g = x.createRadialGradient(512, 512, 488, 512, 512, 512); g.addColorStop(0, '#000'); g.addColorStop(1, 'rgba(0,0,0,0)');
         x.fillStyle = g; x.fillRect(0, 0, 1024, 1024);
-        x.globalCompositeOperation = 'destination-over'; x.fillStyle = '#4a2a14'; x.fillRect(0, 0, 1024, 1024);
+        x.globalCompositeOperation = 'destination-over'; x.fillStyle = '#d8b88c'; x.fillRect(0, 0, 1024, 1024);
         x.globalCompositeOperation = 'source-over';
         photoTex.needsUpdate = true;
+        photoReady();
       };
       img.src = new URL('../img/pizza-photo.jpg', import.meta.url).href;
     }
-    const planarUV = (g, flipZ) => {
-      const p = g.attributes.position, uv = g.attributes.uv;
-      for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / (2 * RP) + 0.5, (flipZ ? -p.getZ(i) : p.getY(i)) / (2 * RP) + 0.5);
-    };
     // בסיס (צד תחתון)
-    const baseH = mesh(new THREE.CylinderGeometry(1.42, 1.36, 0.05, 96), std({ color: '#b98a52', roughness: 0.85, bumpMap: tex(noiseCanvas(256, 14, 70, 200), { srgb: false }), bumpScale: 0.6 }));
-    baseH.position.y = 0.02; heroPizza.add(baseH);
-    // קרום תפוח — עם התמונה עליו
-    const RC = 1.32;   // מרכז צינור הקרום
-    const rimG = new THREE.TorusGeometry(RC, 0.2, 48, 260);
-    {
-      const p = rimG.attributes.position, v = new THREE.Vector3(), c = new THREE.Vector3();
-      for (let i = 0; i < p.count; i++) {
-        v.fromBufferAttribute(p, i);
-        const a = Math.atan2(v.y, v.x);
-        c.set(Math.cos(a) * RC, Math.sin(a) * RC, 0);
-        const off = v.clone().sub(c);
-        const big = (fbm(Math.cos(a) * 2.6 + 4, Math.sin(a) * 2.6, 1.5) - 0.5) * 0.6;
-        const bub = (fbm(v.x * 6, v.y * 6, v.z * 6 + 3) - 0.5) * 0.3;
-        off.multiplyScalar(1 + big + bub);
-        // הצד הפנימי יורד בעדינות אל הגבינה, בלי מדרגה
-        const inward = -(off.x * Math.cos(a) + off.y * Math.sin(a));
-        if (off.z < 0) off.z *= 0.25;
-        off.z *= inward > 0 ? 0.55 : 0.8;
-        p.setXYZ(i, c.x + off.x, c.y + off.y, off.z);
-      }
-      rimG.computeVertexNormals(); planarUV(rimG, false);
+    const baseH = mesh(new THREE.CylinderGeometry(1.5, 1.44, 0.05, 128), std({ color: '#c9a273', roughness: 0.85, bumpMap: tex(noiseCanvas(256, 14, 70, 200), { srgb: false }), bumpScale: 0.6 }));
+    baseH.position.y = 0.025; heroPizza.add(baseH);
+    // משטח אחד בקואורדינטות קוטביות: הגובה נקבע לפי התמונה עצמה —
+    // איפה שנגמר הרוטב/הגבינה מתחיל הקרום, ורק הוא תופח למעלה
+    const RO = 506 / 512 * RP, NR = 110, NA = 360;
+    const pos = new Float32Array((NR + 1) * NA * 3), uvs = new Float32Array((NR + 1) * NA * 2), idx = [];
+    for (let i = 0; i <= NR; i++) for (let j = 0; j < NA; j++) {
+      const r = (i / NR) * RO, th = (j / NA) * Math.PI * 2, k = (i * NA + j);
+      const x = Math.cos(th) * r, z = Math.sin(th) * r;
+      pos.set([x, 0, z], k * 3); uvs.set([x / (2 * RP) + 0.5, -z / (2 * RP) + 0.5], k * 2);
+      if (i < NR) { const a0 = k, a1 = i * NA + (j + 1) % NA, b0 = a0 + NA, b1 = a1 + NA; idx.push(a0, a1, b0, a1, b1, b0); }
     }
-    const rimH = mesh(rimG, photoMat); rimH.rotation.x = -Math.PI / 2; rimH.position.y = 0.06; rimH.castShadow = rimH.receiveShadow = false; heroPizza.add(rimH);
-    // החלק הפנימי: גבינה ותוספות מהתמונה
-    const topG = new THREE.CircleGeometry(RC + 0.02, 128); topG.rotateX(-Math.PI / 2); planarUV(topG, true);
-    // מעט גובה לא אחיד, כמו גבינה ובועות
-    { const p = topG.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); p.setY(i, (fbm(x * 3, z * 3, 2) - 0.5) * 0.03); } topG.computeVertexNormals(); }
-    const topH = mesh(topG, photoMat); topH.position.y = 0.065; topH.castShadow = topH.receiveShadow = false; heroPizza.add(topH);
+    const surfG = new THREE.BufferGeometry();
+    surfG.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    surfG.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    surfG.setIndex(idx);
+    const CRUST_H = 0.13;
+    function shapeSurface(rIn) {          // rIn[j]: היכן מתחיל הקרום בכל זווית (חלק יחסי מהרדיוס)
+      const p = surfG.attributes.position;
+      for (let i = 0; i <= NR; i++) for (let j = 0; j < NA; j++) {
+        const u = i / NR, ri = rIn[j], k = i * NA + j;
+        let h = 0.006;                                                    // רוטב וגבינה: שטוח
+        if (u > ri - 0.04) {
+          // חתך מעוגל: עולה בעדינות מהגבינה, מתעגל ויורד אל שולי הבצק
+          const t = clamp01((u - (ri - 0.04)) / (1 - (ri - 0.04)));
+          h = Math.max(h, CRUST_H * Math.pow(Math.sin(Math.PI * Math.min(1, 0.06 + t * 0.94)), 0.85) * (0.9 + 0.1 * Math.sin(j * 0.21)));
+        }
+        p.setY(k, h);
+      }
+      p.needsUpdate = true; surfG.computeVertexNormals();
+    }
+    shapeSurface(new Array(NA).fill(0.86));
+    const surfH = mesh(surfG, photoMat); surfH.position.y = 0.05; surfH.castShadow = surfH.receiveShadow = false; heroPizza.add(surfH);
+    // אחרי שהתמונה נטענת: מחפשים בכל זווית את גבול הרוטב (צבע רווי) מבחוץ פנימה
+    photoReady = () => {
+      const d = photoCv.getContext('2d').getImageData(0, 0, 1024, 1024).data;
+      const sat = (px, py) => { const o = ((py | 0) * 1024 + (px | 0)) * 4, r = d[o], g = d[o + 1], b = d[o + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx ? (mx - mn) / mx : 0; };
+      const raw = [];
+      for (let j = 0; j < NA; j++) {
+        const th = (j / NA) * Math.PI * 2; let found = 0.86;
+        for (let u = 0.95; u > 0.7; u -= 0.004) {
+          const px = 512 + Math.cos(th) * u * 506, py = 512 + Math.sin(th) * u * 506;
+          let hit = 0; for (let q = 0; q < 3; q++) if (sat(px - Math.cos(th) * q * 3, py - Math.sin(th) * q * 3) > 0.4) hit++;
+          if (hit >= 2) { found = u; break; }
+        }
+        raw.push(Math.min(0.93, Math.max(0.74, found)));
+      }
+      // החלקה לאורך ההיקף
+      const sm = raw.map((_, j) => { const w = []; for (let q = -10; q <= 10; q++) w.push(raw[(j + q + NA) % NA]); w.sort((a, b) => a - b); return w[10]; });
+      const sm2 = sm.map((_, j) => { let t = 0; for (let q = -6; q <= 6; q++) t += sm[(j + q + NA) % NA]; return t / 13; });
+      shapeSurface(sm2);
+    };
   }
   // הילה חמה מאחור + גחלים מרחפות
   const heroGlow = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), new THREE.MeshBasicMaterial({ map: tex(glowCanvas()), transparent: true, depthWrite: false }));
