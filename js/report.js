@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit, closeDate, heDay, fetchStatus, applyStatus, saveStatus, thisWeekSale, regularClose, OPEN_UNTIL } from './common.js?v=18';
+import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit, closeDate, heDay, fetchStatus, applyStatus, saveStatus, thisWeekSale, regularClose, OPEN_UNTIL } from './common.js?v=19';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

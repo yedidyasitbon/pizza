@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder, fetchStatus, applyStatus } from './common.js?v=18';
+import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder, fetchStatus, applyStatus } from './common.js?v=19';
 
 const $ = (s, el = document) => el.querySelector(s);
 const panel = $('#panel');
@@ -36,7 +36,7 @@ const statusP = fetchStatus().then((st) => {
 /* ---------- הסצנה ---------- */
 let scene = null;
 try {
-  const { createPizzaScene } = await import('./scene.js?v=18');
+  const { createPizzaScene } = await import('./scene.js?v=19');
   scene = createPizzaScene($('#pizzaCanvas'), { fadeEl: $('#fade') });
 } catch (e) {
   console.error(e);
