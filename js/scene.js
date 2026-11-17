@@ -296,73 +296,6 @@ function dotCanvas(inner, outer) {
   x.fillStyle = g; x.fillRect(0, 0, 64, 64); return c;
 }
 
-/* ---------- פיצה נפוליטנית לפתיחה ---------- */
-/* קרום מנומר: זהוב, עם כתמי חריכה כהים (leopard) בעיקר בחלק העליון */
-function leopardCanvas() {
-  const W = 2048, H = 384, c = cnv(W, H), x = c.getContext('2d');
-  // v=0..1 סביב הצינור; למעלה ≈ 0.25 (בקנבס: y = (1-v)·H)
-  const g = x.createLinearGradient(0, H, 0, 0);
-  g.addColorStop(0.0, '#e2b273'); g.addColorStop(0.12, '#cf914a'); g.addColorStop(0.25, '#c07a36');
-  g.addColorStop(0.38, '#d9a25e'); g.addColorStop(0.55, '#ecd2a2'); g.addColorStop(0.75, '#b98048'); g.addColorStop(1, '#e2b273');
-  x.fillStyle = g; x.fillRect(0, 0, W, H);
-  for (let i = 0; i < 380; i++) spot(x, R() * W, R() * H, rnd(14, 70), rnd(10, 40), R() > 0.5 ? '#f3ddb4' : '#c88a46', 0.3, 0.2);
-  // קמח על הקרום
-  speckle(x, W, H, 2600, ['#fbf4e6', '#f1e4cb'], 0.5, 1.6, 0.35);
-  // כתמי חריכה
-  for (let i = 0; i < 260; i++) {
-    const v = Math.min(0.62, Math.max(-0.08, 0.25 + (R() + R() - 1) * 0.36));
-    const big = R() < 0.08, r = big ? rnd(9, 22) : rnd(2.5, 8);
-    const px = R() * W, py = (1 - ((v + 1) % 1)) * H;
-    spot(x, px, py, r * 4, r * 3.4, '#9a5a26', 0.4, 0.15);
-    spot(x, px, py, r * 1.6, r * 1.4, '#3b2210', 0.75, 0.3);
-    spot(x, px, py, r, r * 0.95, big ? '#0d0704' : '#1b0e07', rnd(0.75, 1), 0.55);
-  }
-  return grain(c, 20);
-}
-/* רוטב נפוליטני: אדום עמוק, מבריק, עם פירורי עגבנייה וכתמי שמן */
-function napoliSauceCanvas() {
-  const S = 1024, c = cnv(S, S), x = c.getContext('2d');
-  x.fillStyle = '#b8240f'; x.fillRect(0, 0, S, S);
-  for (let i = 0; i < 520; i++) spot(x, R() * S, R() * S, rnd(8, 60), rnd(8, 60), pick0(['#cf3415', '#a01a0b', '#d84a1c', '#8f160a']), 0.32, 0.25);
-  for (let i = 0; i < 260; i++) spot(x, R() * S, R() * S, rnd(3, 10), rnd(3, 10), '#e0532a', 0.45, 0.5);
-  for (let i = 0; i < 90; i++) spot(x, R() * S, R() * S, rnd(10, 30), rnd(6, 16), '#f08a3c', 0.18, 0.2);   // שמן
-  for (let i = 0; i < 200; i++) spot(x, R() * S, R() * S, rnd(4, 16), rnd(4, 16), '#6e1406', 0.35, 0.3);     // רוטב שהתבשל בתנור
-  // שוליים מעט חרוכים
-  const g = x.createRadialGradient(512, 512, 380, 512, 512, 512);
-  g.addColorStop(0, 'rgba(90,20,6,0)'); g.addColorStop(1, 'rgba(90,20,6,0.55)');
-  x.fillStyle = g; x.fillRect(0, 0, S, S);
-  return grain(c, 16);
-}
-function pick0(a) { return a[(R() * a.length) | 0]; }
-/* גרעיניות של צילום — שלא ייראה כמו ציור */
-function grain(c, amt = 18) {
-  const x = c.getContext('2d'), d = x.getImageData(0, 0, c.width, c.height), a = d.data;
-  for (let i = 0; i < a.length; i += 4) { const n = (R() - 0.5) * amt; a[i] += n; a[i + 1] += n * 0.9; a[i + 2] += n * 0.8; }
-  x.putImageData(d, 0, 0); return c;
-}
-/* גבינה צרובה: שמנת־לבן, הזהבה, בועות שחומות וכתמי חריכה קטנים */
-function charCheeseCanvas(pools) {
-  const S = 1024, c = cnv(S, S), x = c.getContext('2d');
-  if (pools) {
-    x.fillStyle = 'rgba(0,0,0,0)';
-    // שלוליות גבינה נמסה עם שוליים רכים, רוטב מבצבץ ביניהן
-    for (let k = 0; k < 15; k++) {
-      const a = R() * 7, r = Math.sqrt(R()) * 300, cx = 512 + Math.cos(a) * r, cy = 512 + Math.sin(a) * r, R0 = rnd(70, 150);
-      for (let j = 0; j < 14; j++) spot(x, cx + rnd(-R0, R0) * 0.6, cy + rnd(-R0, R0) * 0.6, R0 * rnd(0.45, 0.8), R0 * rnd(0.45, 0.8), '#f0d9a6', 1, 0.75);
-    }
-    x.globalCompositeOperation = 'source-atop';
-  } else { x.fillStyle = '#f0d9a6'; x.fillRect(0, 0, S, S); }
-  for (let i = 0; i < 160; i++) spot(x, R() * S, R() * S, rnd(20, 90), rnd(20, 90), pick0(['#f7eedb', '#ecd5a4', '#e6c07a']), 0.5, 0.2);
-  for (let i = 0; i < 190; i++) spot(x, R() * S, R() * S, rnd(18, 70), rnd(14, 60), pick0(['#d99a45', '#e2ad5c', '#c98a3a']), 0.5, 0.15);   // הזהבה
-  for (let i = 0; i < 120; i++) {                                                                                   // בועות צרובות
-    const px = R() * S, py = R() * S, r = rnd(8, 26);
-    spot(x, px, py, r * 2.6, r * 2.3, '#d08f3c', 0.6, 0.2);
-    spot(x, px, py, r * 1.3, r * 1.15, '#a8612a', 0.7, 0.35);
-    if (R() < 0.2) spot(x, px, py, r * 0.5, r * 0.45, '#4a2410', 0.7, 0.5);
-  }
-  x.globalCompositeOperation = 'source-over';
-  return grain(c, 5);
-}
 function glowCanvas() {
   const S = 512, c = cnv(S, S), x = c.getContext('2d');
   const g = x.createRadialGradient(256, 256, 0, 256, 256, 256);
@@ -1020,87 +953,145 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   const heroTilt = new THREE.Group(); hero.add(heroTilt);
   const heroPizza = new THREE.Group(); heroTilt.add(heroPizza);
   {
-    const RP = 1.53; let photoReady = () => {};   // RP: רדיוס התמונה בעולם (כולל הקרום)
-    // תמונה אמיתית של פיצה מהטאבון: מיישרים את האליפסה (צולמה בזווית) לעיגול, מבט מלמעלה
-    const photoCv = cnv(1024, 1024);
-    const photoTex = tex(photoCv);
-    // צבעי התמונה כמו שהם (בלי טון־מיפינג שמבהיר), ותאורה רק בשביל צל ונפח
-    const photoMat = std({ map: photoTex, color: 0x6a6a6a, roughness: 0.75, envMapIntensity: 0.1, emissive: 0xffffff, emissiveMap: photoTex, emissiveIntensity: 0.62,
-      bumpMap: tex(photoCv, { srgb: false }), bumpScale: 1.2 });
-    photoMat.toneMapped = false;
-    photoMat.bumpMap.source = photoTex.source;
+    // ---------------------------------------------------------
+    // פיצה נפוליטנית שנוצרת בכרטיס הגרפי: צבע, גובה, חספוס ונורמלים
+    // מאותן פונקציות רעש — הקרום, הרוטב והגבינה תמיד במקום הנכון
+    // ---------------------------------------------------------
+    const RP = 1.53, HS = 0.17, TS = isTouch ? 1536 : 2048;
+    // תוספות: מיקום (בעולם), כדי לשים אותן וגם לצייר צל רך מתחתיהן
+    const placed = [], tops = [];
+    [['kalamata', 8, 0.06], ['feta', 7, 0.055], ['tomato', 7, 0.075]].forEach(([id, n, ar]) => {
+      scatter(n, 0.66 * RP, placed, 0.22).forEach((c) => { placed.push(c); tops.push({ id, x: c.x, z: c.z, ar }); });
+    });
+    const GLSL_COMMON = `
+      vec3 permute(vec3 x){ return mod(((x*34.0)+1.0)*x, 289.0); }
+      float snoise(vec2 v){
+        const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+        vec2 i = floor(v + dot(v, C.yy)); vec2 x0 = v - i + dot(i, C.xx);
+        vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+        vec4 x12 = x0.xyxy + C.xxzz; x12.xy -= i1; i = mod(i, 289.0);
+        vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0); m = m*m; m = m*m;
+        vec3 x = 2.0 * fract(p * C.www) - 1.0; vec3 h = abs(x) - 0.5; vec3 ox = floor(x + 0.5); vec3 a0 = x - ox;
+        m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+        vec3 g; g.x = a0.x * x0.x + h.x * x0.y; g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
+      }
+      float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { s += a * snoise(p); p = p * 2.03 + vec2(1.7, 9.2); a *= 0.5; } return s; }
+      float n01(vec2 p){ return clamp(fbm(p) * 0.6 + 0.5, 0.0, 1.0); }
+      float fbm3(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 3; i++) { s += a * snoise(p); p = p * 2.07 + vec2(5.3, 1.1); a *= 0.5; } return s; }
+      float s01(vec2 p){ return clamp(fbm3(p) * 0.65 + 0.5, 0.0, 1.0); }
+      vec3 C(int r, int g, int b){ return vec3(float(r), float(g), float(b)) / 255.0; }
+      const float PI = 3.14159265;
+      struct F { float r; float rEdge; float t; float inside; float cheese; float h; float top; };
+      F fields(vec2 p){
+        F f; f.r = length(p); vec2 d = f.r > 1e-4 ? p / f.r : vec2(1.0, 0.0);
+        f.rEdge = 0.962 + 0.024 * fbm(d * 1.2 + 3.1) + 0.008 * snoise(d * 5.0);
+        float rIn = f.rEdge - (0.2 + 0.05 * fbm(d * 1.6 + 8.3));
+        f.t = (f.r - rIn) / (f.rEdge - rIn);
+        f.inside = 1.0 - smoothstep(f.rEdge - 0.002, f.rEdge + 0.002, f.r);
+        float tt = clamp(f.t, 0.0, 1.0);
+        f.top = pow(max(0.0, sin(tt * PI)), 1.4);
+
+        float bub = smoothstep(0.5, 0.85, n01(p * 6.0 + 2.0)) * 0.3 + smoothstep(0.55, 0.85, n01(p * 15.0 + 5.0)) * 0.1;
+        float hc = f.t > 0.0 ? pow(max(0.0, sin(tt * PI)), 0.7) * (0.8 + bub) : 0.0;
+
+        float c = s01(p * 2.2 + 4.0) + 0.04 * snoise(p * 8.0);
+        f.cheese = smoothstep(0.41, 0.48, c) * (1.0 - smoothstep(-0.3, -0.08, f.t));
+        float hch = f.cheese * (0.05 + 0.025 * n01(p * 11.0));
+        f.h = max(hc, hch + 0.008 * n01(p * 18.0)) * f.inside;
+        return f;
+      }
+      uniform vec3 uTops[24]; uniform int uTopN;
+      varying vec2 vUv;
+    `;
+    const VERT = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+    const colorFrag = GLSL_COMMON + `
+      void main(){
+        vec2 p = (vUv - 0.5) * 2.0; F f = fields(p); float t = f.t;
+
+        vec3 s = mix(C(128, 18, 6), C(176, 34, 12), s01(p * 4.0));
+        s = mix(s, C(98, 12, 4), smoothstep(0.6, 0.8, s01(p * 11.0 + 3.0)) * 0.5);
+        s = mix(s, C(196, 70, 20), smoothstep(0.66, 0.82, s01(p * 3.0 + 9.0)) * 0.3);
+        s = mix(s, C(96, 26, 8), smoothstep(-0.14, 0.0, t) * 0.45);
+
+        vec3 ch = mix(C(248, 240, 220), C(242, 226, 188), s01(p * 5.0));
+        ch = mix(ch, C(234, 196, 122), smoothstep(0.45, 0.7, s01(p * 4.0 + 1.0)) * 0.75);
+        float bl = s01(p * 8.0 + 7.0) + 0.08 * snoise(p * 30.0);
+        ch = mix(ch, C(218, 156, 70), smoothstep(0.55, 0.62, bl) * 0.85);
+        ch = mix(ch, C(166, 96, 38), smoothstep(0.63, 0.69, bl) * 0.85);
+        ch = mix(ch, C(70, 34, 12), smoothstep(0.72, 0.76, bl) * 0.75);
+        vec3 inner = mix(s, ch, f.cheese);
+        inner = mix(inner, C(226, 118, 44), clamp(f.cheese * (1.0 - f.cheese) * 2.2, 0.0, 1.0) * 0.6);
+
+        float tt = clamp(t, 0.0, 1.0);
+        vec3 dough = mix(C(240, 222, 188), C(230, 204, 160), s01(p * 6.0));
+        vec3 baked = mix(C(222, 172, 104), C(196, 132, 66), s01(p * 4.0 + 2.0));
+        vec3 cr = mix(dough, baked, f.top * (0.35 + 0.65 * s01(p * 2.5 + 6.0)));
+        float L1 = s01(p * 13.0 + 11.0) + 0.14 * f.top - 0.05, L2 = s01(p * 6.0 + 21.0) + 0.14 * f.top - 0.04;
+        float halo = max(smoothstep(0.7, 0.77, L1), smoothstep(0.72, 0.79, L2));
+        float core = max(smoothstep(0.78, 0.81, L1), smoothstep(0.81, 0.85, L2));
+        cr = mix(cr, C(150, 88, 38), halo * 0.8);
+        cr = mix(cr, C(36, 18, 8), core);
+        cr = mix(cr, C(250, 246, 236), smoothstep(0.75, 0.95, n01(p * 60.0)) * smoothstep(0.6, 1.0, tt) * 0.4);
+        vec3 col = mix(inner, cr, smoothstep(-0.03, 0.06, t));
+
+        float ao = 1.0;
+        for (int i = 0; i < 24; i++) { if (i >= uTopN) break; vec3 q = uTops[i]; float d = length(p - q.xy) / q.z; ao *= 1.0 - 0.5 * exp(-d * d * 1.3); }
+        col *= mix(1.0, ao, 1.0 - smoothstep(-0.05, 0.1, t));
+        gl_FragColor = vec4(pow(col, vec3(2.2)), f.inside);
+      }`;
+    const dataFrag = GLSL_COMMON + `
+      void main(){
+        vec2 p = (vUv - 0.5) * 2.0; F f = fields(p);
+        float rough = mix(mix(0.55, 0.5, f.cheese), 0.86, smoothstep(-0.03, 0.06, f.t));
+        rough -= smoothstep(0.64, 0.8, n01(p * 3.0 + 9.0)) * 0.15 * (1.0 - smoothstep(-0.03, 0.06, f.t));
+        gl_FragColor = vec4(f.h, rough, 0.0, 1.0);
+      }`;
+    const normFrag = GLSL_COMMON + `
+      uniform float uTexel; uniform float uK;
+      float H(vec2 p){ F f = fields(p); float detail = 0.004 * n01(p * 70.0) * smoothstep(-0.03, 0.06, f.t) + 0.004 * n01(p * 40.0) * f.cheese; return f.h + detail; }
+      void main(){
+        vec2 p = (vUv - 0.5) * 2.0; float e = uTexel * 2.0;
+        float sx = (H(p + vec2(e, 0.0)) - H(p - vec2(e, 0.0))) / (2.0 * e) * uK;
+        float sy = (H(p + vec2(0.0, e)) - H(p - vec2(0.0, e))) / (2.0 * e) * uK;
+        gl_FragColor = vec4(normalize(vec3(-sx, -sy, 1.0)) * 0.5 + 0.5, 1.0);
+      }`;
+    const uni = { uTops: { value: Array.from({ length: 24 }, () => new THREE.Vector3()) }, uTopN: { value: tops.length }, uTexel: { value: 2 / TS }, uK: { value: HS / RP } };
+    tops.forEach((o, i) => uni.uTops.value[i].set(o.x / RP, -o.z / RP, o.ar));
+    const mkRT = () => { const rt = new THREE.WebGLRenderTarget(TS, TS, { depthBuffer: false }); rt.texture.generateMipmaps = true; rt.texture.minFilter = THREE.LinearMipmapLinearFilter; rt.texture.anisotropy = 8; return rt; };
+    const rtColor = mkRT(), rtData = mkRT(), rtNorm = mkRT();
     {
-      const img = new Image();
-      img.onload = () => {
-        const x = photoCv.getContext('2d');
-        // אליפסת הפיצה בתמונה: מרכז (390,834), זווית −11.1°, צירים 397/320
-        const cx = 390, cy = 834, th = -11.1 * Math.PI / 180, a1 = 397, a2 = 320;
-        x.save(); x.translate(512, 512); x.rotate(th); x.scale(506 / a1, 506 / a2); x.rotate(-th); x.translate(-cx, -cy);
-        x.drawImage(img, 0, 0); x.restore();
-        // מחוץ לעיגול — צבע הקרום, שלא יופיע הקרש
-        x.globalCompositeOperation = 'destination-in';
-        const g = x.createRadialGradient(512, 512, 488, 512, 512, 512); g.addColorStop(0, '#000'); g.addColorStop(1, 'rgba(0,0,0,0)');
-        x.fillStyle = g; x.fillRect(0, 0, 1024, 1024);
-        x.globalCompositeOperation = 'destination-over'; x.fillStyle = '#d8b88c'; x.fillRect(0, 0, 1024, 1024);
-        x.globalCompositeOperation = 'source-over';
-        photoTex.needsUpdate = true;
-        photoReady();
-      };
-      img.src = new URL('../img/pizza-photo.jpg', import.meta.url).href;
+      const qs = new THREE.Scene(), qc = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2)); quad.frustumCulled = false; qs.add(quad);
+      for (const [frag, rt] of [[colorFrag, rtColor], [dataFrag, rtData], [normFrag, rtNorm]]) {
+        quad.material = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: frag, uniforms: uni });
+        renderer.setRenderTarget(rt); renderer.render(qs, qc); quad.material.dispose();
+      }
+      renderer.setRenderTarget(null);
     }
-    // בסיס (צד תחתון)
-    const baseH = mesh(new THREE.CylinderGeometry(1.5, 1.44, 0.05, 128), std({ color: '#c9a273', roughness: 0.85, bumpMap: tex(noiseCanvas(256, 14, 70, 200), { srgb: false }), bumpScale: 0.6 }));
+    const GRID = isTouch ? 300 : 420;
+    const surfG = new THREE.PlaneGeometry(2 * RP, 2 * RP, GRID, GRID); surfG.rotateX(-Math.PI / 2);
+    const surfMat = std({ map: rtColor.texture, displacementMap: rtData.texture, displacementScale: HS, roughnessMap: rtData.texture, roughness: 1,
+      normalMap: rtNorm.texture, alphaTest: 0.5, envMapIntensity: 0.35 });
+    const surfH = new THREE.Mesh(surfG, surfMat); surfH.position.y = 0.05; heroPizza.add(surfH);
+    // תחתית הבצק
+    const baseH = mesh(new THREE.CylinderGeometry(RP * 0.955, RP * 0.93, 0.05, 128), std({ color: '#dcbf92', roughness: 0.88, bumpMap: tex(noiseCanvas(256, 14, 70, 200), { srgb: false }), bumpScale: 0.6 }));
     baseH.position.y = 0.025; heroPizza.add(baseH);
-    // משטח אחד בקואורדינטות קוטביות: הגובה נקבע לפי התמונה עצמה —
-    // איפה שנגמר הרוטב/הגבינה מתחיל הקרום, ורק הוא תופח למעלה
-    const RO = 506 / 512 * RP, NR = 110, NA = 360;
-    const pos = new Float32Array((NR + 1) * NA * 3), uvs = new Float32Array((NR + 1) * NA * 2), idx = [];
-    for (let i = 0; i <= NR; i++) for (let j = 0; j < NA; j++) {
-      const r = (i / NR) * RO, th = (j / NA) * Math.PI * 2, k = (i * NA + j);
-      const x = Math.cos(th) * r, z = Math.sin(th) * r;
-      pos.set([x, 0, z], k * 3); uvs.set([x / (2 * RP) + 0.5, -z / (2 * RP) + 0.5], k * 2);
-      if (i < NR) { const a0 = k, a1 = i * NA + (j + 1) % NA, b0 = a0 + NA, b1 = a1 + NA; idx.push(a0, a1, b0, a1, b1, b0); }
-    }
-    const surfG = new THREE.BufferGeometry();
-    surfG.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    surfG.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-    surfG.setIndex(idx);
-    const CRUST_H = 0.13;
-    function shapeSurface(rIn) {          // rIn[j]: היכן מתחיל הקרום בכל זווית (חלק יחסי מהרדיוס)
-      const p = surfG.attributes.position;
-      for (let i = 0; i <= NR; i++) for (let j = 0; j < NA; j++) {
-        const u = i / NR, ri = rIn[j], k = i * NA + j;
-        let h = 0.006;                                                    // רוטב וגבינה: שטוח
-        if (u > ri - 0.04) {
-          // חתך מעוגל: עולה בעדינות מהגבינה, מתעגל ויורד אל שולי הבצק
-          const t = clamp01((u - (ri - 0.04)) / (1 - (ri - 0.04)));
-          h = Math.max(h, CRUST_H * Math.pow(Math.sin(Math.PI * Math.min(1, 0.06 + t * 0.94)), 0.85) * (0.9 + 0.1 * Math.sin(j * 0.21)));
-        }
-        p.setY(k, h);
-      }
-      p.needsUpdate = true; surfG.computeVertexNormals();
-    }
-    shapeSurface(new Array(NA).fill(0.86));
-    const surfH = mesh(surfG, photoMat); surfH.position.y = 0.05; surfH.castShadow = surfH.receiveShadow = false; heroPizza.add(surfH);
-    // אחרי שהתמונה נטענת: מחפשים בכל זווית את גבול הרוטב (צבע רווי) מבחוץ פנימה
-    photoReady = () => {
-      const d = photoCv.getContext('2d').getImageData(0, 0, 1024, 1024).data;
-      const sat = (px, py) => { const o = ((py | 0) * 1024 + (px | 0)) * 4, r = d[o], g = d[o + 1], b = d[o + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx ? (mx - mn) / mx : 0; };
-      const raw = [];
-      for (let j = 0; j < NA; j++) {
-        const th = (j / NA) * Math.PI * 2; let found = 0.86;
-        for (let u = 0.95; u > 0.7; u -= 0.004) {
-          const px = 512 + Math.cos(th) * u * 506, py = 512 + Math.sin(th) * u * 506;
-          let hit = 0; for (let q = 0; q < 3; q++) if (sat(px - Math.cos(th) * q * 3, py - Math.sin(th) * q * 3) > 0.4) hit++;
-          if (hit >= 2) { found = u; break; }
-        }
-        raw.push(Math.min(0.93, Math.max(0.74, found)));
-      }
-      // החלקה לאורך ההיקף
-      const sm = raw.map((_, j) => { const w = []; for (let q = -10; q <= 10; q++) w.push(raw[(j + q + NA) % NA]); w.sort((a, b) => a - b); return w[10]; });
-      const sm2 = sm.map((_, j) => { let t = 0; for (let q = -6; q <= 6; q++) t += sm[(j + q + NA) % NA]; return t / 13; });
-      shapeSurface(sm2);
-    };
+    // תוספות אפויות
+    const bakedLook = (obj) => obj.traverse((o) => {
+      if (!o.material) return;
+      const e = bakeList().find(([m]) => m === o.material);
+      o.material = o.material.clone(); o.material.envMapIntensity = Math.min(o.material.envMapIntensity ?? 1, 0.45);
+      if (e) o.material.color.copy(e[0].color).lerp(e[1], 0.3);
+    });
+    tops.forEach((o) => {
+      const piece = makePiece(o.id); bakedLook(piece);
+      piece.position.set(o.x, 0.058, o.z); piece.scale.multiplyScalar(0.9);
+      if (o.id === 'tomato') { piece.rotation.x = Math.PI; piece.position.y = 0.072; }          // קליפה אדומה צלויה למעלה
+      if (o.id === 'kalamata') piece.traverse((m) => { if (m.isMesh) m.scale.x /= 1.3; });       // זית עגול יותר
+      heroPizza.add(piece);
+    });
   }
   // הילה חמה מאחור + גחלים מרחפות
   const heroGlow = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), new THREE.MeshBasicMaterial({ map: tex(glowCanvas()), transparent: true, depthWrite: false }));
