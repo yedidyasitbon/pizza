@@ -317,7 +317,7 @@ function leopardCanvas() {
     spot(x, px, py, r * 1.6, r * 1.4, '#3b2210', 0.75, 0.3);
     spot(x, px, py, r, r * 0.95, big ? '#0d0704' : '#1b0e07', rnd(0.75, 1), 0.55);
   }
-  return c;
+  return grain(c, 20);
 }
 /* רוטב נפוליטני: אדום עמוק, מבריק, עם פירורי עגבנייה וכתמי שמן */
 function napoliSauceCanvas() {
@@ -326,36 +326,42 @@ function napoliSauceCanvas() {
   for (let i = 0; i < 520; i++) spot(x, R() * S, R() * S, rnd(8, 60), rnd(8, 60), pick0(['#cf3415', '#a01a0b', '#d84a1c', '#8f160a']), 0.32, 0.25);
   for (let i = 0; i < 260; i++) spot(x, R() * S, R() * S, rnd(3, 10), rnd(3, 10), '#e0532a', 0.45, 0.5);
   for (let i = 0; i < 90; i++) spot(x, R() * S, R() * S, rnd(10, 30), rnd(6, 16), '#f08a3c', 0.18, 0.2);   // שמן
+  for (let i = 0; i < 200; i++) spot(x, R() * S, R() * S, rnd(4, 16), rnd(4, 16), '#6e1406', 0.35, 0.3);     // רוטב שהתבשל בתנור
   // שוליים מעט חרוכים
   const g = x.createRadialGradient(512, 512, 380, 512, 512, 512);
   g.addColorStop(0, 'rgba(90,20,6,0)'); g.addColorStop(1, 'rgba(90,20,6,0.55)');
   x.fillStyle = g; x.fillRect(0, 0, S, S);
-  return c;
+  return grain(c, 16);
 }
 function pick0(a) { return a[(R() * a.length) | 0]; }
-/* מוצרלה: לבן חלבי עם הזהבה עדינה בשוליים */
-function mozzCanvas() {
-  const S = 256, c = cnv(S, S), x = c.getContext('2d');
-  x.fillStyle = '#f3ecdc'; x.fillRect(0, 0, S, S);
-  for (let i = 0; i < 60; i++) spot(x, R() * S, R() * S, rnd(8, 40), rnd(8, 40), R() > 0.5 ? '#ffffff' : '#efe6d2', 0.4, 0.2);
-  for (let i = 0; i < 10; i++) spot(x, R() * S, R() * S, rnd(4, 14), rnd(4, 14), '#e9c98e', 0.35, 0.3);
-  return c;
+/* גרעיניות של צילום — שלא ייראה כמו ציור */
+function grain(c, amt = 18) {
+  const x = c.getContext('2d'), d = x.getImageData(0, 0, c.width, c.height), a = d.data;
+  for (let i = 0; i < a.length; i += 4) { const n = (R() - 0.5) * amt; a[i] += n; a[i + 1] += n * 0.9; a[i + 2] += n * 0.8; }
+  x.putImageData(d, 0, 0); return c;
 }
-/* עלה בזיליקום: ירוק עמוק, עורק מרכזי ועורקים צדדיים */
-function basilCanvas() {
-  const S = 256, c = cnv(S, S), x = c.getContext('2d');
-  const g = x.createLinearGradient(0, 0, S, 0);
-  g.addColorStop(0, '#1d4d10'); g.addColorStop(0.5, '#2c6e18'); g.addColorStop(1, '#1d4d10');
-  x.fillStyle = g; x.fillRect(0, 0, S, S);
-  for (let i = 0; i < 40; i++) spot(x, R() * S, R() * S, rnd(10, 40), rnd(10, 40), R() > 0.5 ? '#4b9a2e' : '#245a15', 0.3, 0.2);
-  x.strokeStyle = 'rgba(170,215,120,0.75)'; x.lineWidth = 3;
-  x.beginPath(); x.moveTo(S / 2, S); x.lineTo(S / 2, 0); x.stroke();
-  x.lineWidth = 1.6; x.strokeStyle = 'rgba(150,200,105,0.5)';
-  for (let k = 0; k < 7; k++) {
-    const y = S * (0.9 - k * 0.12);
-    for (const d of [-1, 1]) { x.beginPath(); x.moveTo(S / 2, y); x.quadraticCurveTo(S / 2 + d * 50, y - 20, S / 2 + d * 110, y - 60); x.stroke(); }
+/* גבינה צרובה: שמנת־לבן, הזהבה, בועות שחומות וכתמי חריכה קטנים */
+function charCheeseCanvas(pools) {
+  const S = 1024, c = cnv(S, S), x = c.getContext('2d');
+  if (pools) {
+    x.fillStyle = 'rgba(0,0,0,0)';
+    // שלוליות גבינה נמסה עם שוליים רכים, רוטב מבצבץ ביניהן
+    for (let k = 0; k < 15; k++) {
+      const a = R() * 7, r = Math.sqrt(R()) * 300, cx = 512 + Math.cos(a) * r, cy = 512 + Math.sin(a) * r, R0 = rnd(70, 150);
+      for (let j = 0; j < 14; j++) spot(x, cx + rnd(-R0, R0) * 0.6, cy + rnd(-R0, R0) * 0.6, R0 * rnd(0.45, 0.8), R0 * rnd(0.45, 0.8), '#f0d9a6', 1, 0.75);
+    }
+    x.globalCompositeOperation = 'source-atop';
+  } else { x.fillStyle = '#f0d9a6'; x.fillRect(0, 0, S, S); }
+  for (let i = 0; i < 160; i++) spot(x, R() * S, R() * S, rnd(20, 90), rnd(20, 90), pick0(['#f7eedb', '#ecd5a4', '#e6c07a']), 0.5, 0.2);
+  for (let i = 0; i < 190; i++) spot(x, R() * S, R() * S, rnd(18, 70), rnd(14, 60), pick0(['#d99a45', '#e2ad5c', '#c98a3a']), 0.5, 0.15);   // הזהבה
+  for (let i = 0; i < 120; i++) {                                                                                   // בועות צרובות
+    const px = R() * S, py = R() * S, r = rnd(8, 26);
+    spot(x, px, py, r * 2.6, r * 2.3, '#d08f3c', 0.6, 0.2);
+    spot(x, px, py, r * 1.3, r * 1.15, '#a8612a', 0.7, 0.35);
+    if (R() < 0.2) spot(x, px, py, r * 0.5, r * 0.45, '#4a2410', 0.7, 0.5);
   }
-  return c;
+  x.globalCompositeOperation = 'source-over';
+  return grain(c, 5);
 }
 function glowCanvas() {
   const S = 512, c = cnv(S, S), x = c.getContext('2d');
@@ -1014,71 +1020,63 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   const heroTilt = new THREE.Group(); hero.add(heroTilt);
   const heroPizza = new THREE.Group(); heroTilt.add(heroPizza);
   {
-    const RR = 1.24;
-    // בסיס
-    const baseH = mesh(new THREE.CylinderGeometry(RR + 0.06, RR, 0.05, 96), std({ color: '#d9ad6e', roughness: 0.85, bumpMap: tex(noiseCanvas(256, 14, 70, 200), { srgb: false }), bumpScale: 0.6 }));
-    baseH.position.y = 0.025; heroPizza.add(baseH);
-    // קרום אוורירי ותפוח
-    const rimG = new THREE.TorusGeometry(RR, 0.25, 48, 260);
+    const RR = 1.24, RP = 1.53;   // RP: רדיוס התמונה בעולם (כולל הקרום)
+    // תמונה אמיתית של פיצה מהטאבון: מיישרים את האליפסה (צולמה בזווית) לעיגול, מבט מלמעלה
+    const photoCv = cnv(1024, 1024);
+    const photoTex = tex(photoCv);
+    const photoMat = std({ map: photoTex, roughness: 0.7, envMapIntensity: 0.15, emissive: 0xffffff, emissiveMap: photoTex, emissiveIntensity: 0.2 });
+    {
+      const img = new Image();
+      img.onload = () => {
+        const x = photoCv.getContext('2d');
+        // אליפסת הפיצה בתמונה: מרכז (390,259), זווית 32.3°, צירים 303/201
+        const cx = 390, cy = 259, th = 32.3 * Math.PI / 180, a1 = 303, a2 = 201;
+        x.save(); x.translate(512, 512); x.rotate(th); x.scale(506 / a1, 506 / a2); x.rotate(-th); x.translate(-cx, -cy);
+        x.drawImage(img, 0, 0); x.restore();
+        // מחוץ לעיגול — צבע הקרום, שלא יופיע הקרש
+        x.globalCompositeOperation = 'destination-in';
+        const g = x.createRadialGradient(512, 512, 470, 512, 512, 512); g.addColorStop(0, '#000'); g.addColorStop(1, 'rgba(0,0,0,0)');
+        x.fillStyle = g; x.fillRect(0, 0, 1024, 1024);
+        x.globalCompositeOperation = 'destination-over'; x.fillStyle = '#4a2a14'; x.fillRect(0, 0, 1024, 1024);
+        x.globalCompositeOperation = 'source-over';
+        photoTex.needsUpdate = true;
+      };
+      img.src = new URL('../img/pizza-photo.jpg', import.meta.url).href;
+    }
+    const planarUV = (g, flipZ) => {
+      const p = g.attributes.position, uv = g.attributes.uv;
+      for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / (2 * RP) + 0.5, (flipZ ? -p.getZ(i) : p.getY(i)) / (2 * RP) + 0.5);
+    };
+    // בסיס (צד תחתון)
+    const baseH = mesh(new THREE.CylinderGeometry(1.42, 1.36, 0.05, 96), std({ color: '#b98a52', roughness: 0.85, bumpMap: tex(noiseCanvas(256, 14, 70, 200), { srgb: false }), bumpScale: 0.6 }));
+    baseH.position.y = 0.02; heroPizza.add(baseH);
+    // קרום תפוח — עם התמונה עליו
+    const RC = 1.32;   // מרכז צינור הקרום
+    const rimG = new THREE.TorusGeometry(RC, 0.2, 48, 260);
     {
       const p = rimG.attributes.position, v = new THREE.Vector3(), c = new THREE.Vector3();
       for (let i = 0; i < p.count; i++) {
         v.fromBufferAttribute(p, i);
         const a = Math.atan2(v.y, v.x);
-        c.set(Math.cos(a) * RR, Math.sin(a) * RR, 0);
+        c.set(Math.cos(a) * RC, Math.sin(a) * RC, 0);
         const off = v.clone().sub(c);
-        const big = (fbm(Math.cos(a) * 2.6 + 4, Math.sin(a) * 2.6, 1.5) - 0.5) * 0.9;
-        const bub = (fbm(v.x * 6, v.y * 6, v.z * 6 + 3) - 0.5) * 0.45;
+        const big = (fbm(Math.cos(a) * 2.6 + 4, Math.sin(a) * 2.6, 1.5) - 0.5) * 0.6;
+        const bub = (fbm(v.x * 6, v.y * 6, v.z * 6 + 3) - 0.5) * 0.3;
         off.multiplyScalar(1 + big + bub);
+        // הצד הפנימי יורד בעדינות אל הגבינה, בלי מדרגה
+        const inward = -(off.x * Math.cos(a) + off.y * Math.sin(a));
         if (off.z < 0) off.z *= 0.25;
-        off.z *= 1.05;
-        const wob = 1 + (fbm(Math.cos(a) * 3, Math.sin(a) * 3, 11) - 0.5) * 0.06;
-        p.setXYZ(i, c.x * wob + off.x, c.y * wob + off.y, off.z);
+        off.z *= inward > 0 ? 0.55 : 0.8;
+        p.setXYZ(i, c.x + off.x, c.y + off.y, off.z);
       }
-      rimG.computeVertexNormals();
+      rimG.computeVertexNormals(); planarUV(rimG, false);
     }
-    const rimH = mesh(rimG, std({ map: tex(leopardCanvas()), roughness: 0.78, bumpMap: tex(noiseCanvas(256, 10, 40, 220), { srgb: false, repeat: [8, 1] }), bumpScale: 1.6 }));
-    rimH.rotation.x = -Math.PI / 2; rimH.position.y = 0.08; heroPizza.add(rimH);
-    // רוטב
-    const sauceH = mesh(discGeo(RR - 0.08, 0.03, 5), std({ map: tex(napoliSauceCanvas()), color: '#d9c4be', roughness: 0.26, envMapIntensity: 0.8, bumpMap: tex(noiseCanvas(256, 18, 70, 190), { srgb: false }), bumpScale: 0.9 }));
-    sauceH.position.y = 0.052; sauceH.castShadow = false; heroPizza.add(sauceH);
-    // מוצרלה: שלוליות לבנות נמסות
-    const mozzMat = new THREE.MeshPhysicalMaterial({ map: tex(mozzCanvas()), roughness: 0.5, clearcoat: 0.25, clearcoatRoughness: 0.4 });
-    mozzMat.envMapIntensity = 0.35;
-    const spots = [[0.05, 0.05, 0.2], [0.62, 0.18, 0.19], [-0.55, 0.42, 0.2], [0.18, -0.66, 0.19], [-0.45, -0.45, 0.17], [0.45, 0.66, 0.15], [-0.75, -0.02, 0.14], [0.72, -0.45, 0.15], [-0.12, 0.74, 0.16]];
-    spots.forEach(([sx, sz, r], k) => {
-      const g = new THREE.ExtrudeGeometry(noisyShape(r, 0.36, k * 3 + 2, 40), { depth: 0.008, bevelEnabled: true, bevelThickness: 0.026, bevelSize: r * 0.45, bevelSegments: 5, curveSegments: 40 });
-      g.rotateX(-Math.PI / 2);
-      const m = mesh(g, mozzMat); m.position.set(sx, 0.06, sz); m.rotation.y = R() * 6; m.scale.y = rnd(0.7, 1.1);
-      heroPizza.add(m);
-    });
-    // בזיליקום טרי
-    const basilMat = std({ map: tex(basilCanvas()), roughness: 0.32, envMapIntensity: 0.8, side: THREE.DoubleSide });
-    const leafGeo = (L, w) => {
-      const sh = new THREE.Shape(); sh.moveTo(0, 0);
-      sh.bezierCurveTo(w, L * 0.15, w * 0.9, L * 0.75, 0, L); sh.bezierCurveTo(-w * 0.9, L * 0.75, -w, L * 0.15, 0, 0);
-      const g = new THREE.ShapeGeometry(sh, 24);
-      const p = g.attributes.position, uv = g.attributes.uv;
-      for (let i = 0; i < p.count; i++) {
-        const x = p.getX(i), y = p.getY(i);
-        uv.setXY(i, x / (w * 2) + 0.5, y / L);
-        p.setZ(i, (x * x) / (w * w) * 0.05 + Math.sin((y / L) * Math.PI) * 0.035);   // מקופל לאורך העורק ומתעגל
-      }
-      g.rotateX(-Math.PI / 2); g.computeVertexNormals(); return g;
-    };
-    [[-0.05, 0.05, 0.3], [0.12, -0.02, 2.2], [0.02, -0.14, 4.1], [0.55, -0.3, 1.2], [-0.5, 0.25, 5.3], [0.2, 0.55, 3.2]].forEach(([bx, bz, ry], k) => {
-      const L = k < 3 ? rnd(0.44, 0.52) : rnd(0.32, 0.4);
-      const m = mesh(leafGeo(L, L * 0.33), basilMat);
-      m.position.set(bx, 0.115, bz); m.rotation.y = ry; m.rotation.x = rnd(-0.12, 0.05);
-      heroPizza.add(m);
-    });
-    // כתמי שמן זית מבריקים
-    const oilMat = new THREE.MeshPhysicalMaterial({ color: '#d99a2b', transparent: true, opacity: 0.35, roughness: 0.05, clearcoat: 1, depthWrite: false });
-    for (let k = 0; k < 14; k++) {
-      const a = R() * 7, r = Math.sqrt(R()) * 0.95;
-      const d = new THREE.Mesh(discGeo(rnd(0.03, 0.07), 0.2, k), oilMat);
-      d.position.set(Math.cos(a) * r, 0.06, Math.sin(a) * r); heroPizza.add(d);
-    }
+    const rimH = mesh(rimG, photoMat); rimH.rotation.x = -Math.PI / 2; rimH.position.y = 0.06; rimH.castShadow = rimH.receiveShadow = false; heroPizza.add(rimH);
+    // החלק הפנימי: גבינה ותוספות מהתמונה
+    const topG = new THREE.CircleGeometry(RC + 0.02, 128); topG.rotateX(-Math.PI / 2); planarUV(topG, true);
+    // מעט גובה לא אחיד, כמו גבינה ובועות
+    { const p = topG.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); p.setY(i, (fbm(x * 3, z * 3, 2) - 0.5) * 0.03); } topG.computeVertexNormals(); }
+    const topH = mesh(topG, photoMat); topH.position.y = 0.065; topH.castShadow = topH.receiveShadow = false; heroPizza.add(topH);
   }
   // הילה חמה מאחור + גחלים מרחפות
   const heroGlow = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), new THREE.MeshBasicMaterial({ map: tex(glowCanvas()), transparent: true, depthWrite: false }));
@@ -1089,53 +1087,67 @@ export function createPizzaScene(canvasEl, { fadeEl } = {}) {
   const hembMat = new THREE.PointsMaterial({ size: 0.06, map: tex(dotCanvas('rgba(255,215,150,1)', 'rgba(255,90,0,0)')), color: 0xffb060, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
   hero.add(new THREE.Points(hembGeo, hembMat));
   // תאורה של הפתיחה (רק באזור שלה)
-  const hKey = new THREE.PointLight(0xffe0b8, 38, 14, 2); hKey.position.copy(HP).add(V(-2.2, 3.4, 2.6)); scene.add(hKey);
+  const hKey = new THREE.PointLight(0xffe0b8, 30, 14, 2); hKey.position.copy(HP).add(V(-2.2, 3.4, 2.6)); scene.add(hKey);
   const hRim = new THREE.PointLight(0xff7a30, 45, 12, 2); hRim.position.copy(HP).add(V(2.4, 0.6, -2.6)); scene.add(hRim);
   const hFill = new THREE.PointLight(0xffd2a0, 14, 12, 2); hFill.position.copy(HP).add(V(2.6, 1.2, 3.2)); scene.add(hFill);
 
   const VIEW_HERO = mkView(HP.clone().add(V(0, 1.1, 6.9)), HP.clone().add(V(0, 0.1, 0)), 1.9);
-  let heroSpin = 0.6, heroVel = 0, heroOn = true;
+  let heroSpin = 0.6, heroOn = true;
+  // סיבוב חופשי באצבע/עכבר לכל כיוון, עם תנופה, וחזרה רכה לתנועה האוטומטית
+  const heroUser = new THREE.Group(); hero.add(heroUser); heroUser.add(heroTilt);
+  const drag = { on: false, x: 0, y: 0, vx: 0, vy: 0, idle: 9 };
+  const qTmp = new THREE.Quaternion(), qId = new THREE.Quaternion(), AX = V(1, 0, 0), AY = V(0, 1, 0);
+  const turn = (dx, dy) => {
+    qTmp.setFromAxisAngle(AY, dx); heroUser.quaternion.premultiply(qTmp);
+    qTmp.setFromAxisAngle(AX, dy); heroUser.quaternion.premultiply(qTmp);
+  };
   function heroView() {
     camera.position.copy(VIEW_HERO.pos); controls.target.copy(VIEW_HERO.target); controls.update();
     scene.fog.near = 40; scene.fog.far = 90;
     heroGlow.position.set(0, 0.2, -2.4); heroGlow.lookAt(camera.position);
   }
   function updateHero(dt) {
-    heroVel *= 1 - Math.min(1, dt * 2.2);
-    heroSpin += dt * (0.42 * SPEED + heroVel);
+    heroSpin += dt * 0.16 * SPEED;                                  // סיבוב איטי סביב עצמה
     heroPizza.rotation.y = heroSpin;
-    heroTilt.rotation.x = 0.36 + Math.sin(now * 0.7) * 0.05;
-    heroTilt.rotation.z = Math.sin(now * 0.45) * 0.07;
-    heroTilt.position.y = 0.12 + Math.sin(now * 1.1) * 0.06;
+    heroTilt.rotation.x = 0.42 + Math.sin(now * 0.32) * 0.3;          // מטה ומעלה: פעם מלמעלה, פעם מהצד
+    heroTilt.rotation.z = Math.sin(now * 0.23) * 0.14;
+    heroTilt.position.y = 0.12 + Math.sin(now * 0.9) * 0.05;
+    if (!drag.on) {
+      if (Math.abs(drag.vx) + Math.abs(drag.vy) > 1e-4) { turn(drag.vx, drag.vy); drag.vx *= 0.93; drag.vy *= 0.93; }
+      drag.idle += dt;
+      if (drag.idle > 2.5) heroUser.quaternion.slerp(qId, Math.min(1, dt * 0.5));
+    }
     const ea = hembGeo.attributes.position;
     for (let i = 0; i < HEMB; i++) {
       const e = hembData[i]; e.t += dt * e.sp; if (e.t > 1) { e.t = 0; e.x = rnd(-3.2, 3.2); }
       ea.setXYZ(i, e.x + Math.sin(e.t * 6 + e.sw) * 0.25, -1.6 + e.t * 4.2, e.z);
     }
     ea.needsUpdate = true;
-    hembMat.opacity = 0.9;
   }
-  // גרירה לצדדים מסובבת את הפיצה
-  {
-    let lastX = null;
-    canvasEl.addEventListener('pointerdown', (e) => { if (state === 'hero') lastX = e.clientX; });
-    addEventListener('pointermove', (e) => { if (lastX === null || state !== 'hero') return; heroVel += (e.clientX - lastX) * 0.012; heroVel = Math.max(-8, Math.min(8, heroVel)); lastX = e.clientX; });
-    addEventListener('pointerup', () => { lastX = null; });
-  }
+  canvasEl.addEventListener('pointerdown', (e) => {
+    if (state !== 'hero') return;
+    drag.on = true; drag.x = e.clientX; drag.y = e.clientY; drag.vx = drag.vy = 0; drag.idle = 0;
+    canvasEl.setPointerCapture?.(e.pointerId);
+  });
+  canvasEl.addEventListener('pointermove', (e) => {
+    if (!drag.on || state !== 'hero') return;
+    const dx = (e.clientX - drag.x) * 0.009, dy = (e.clientY - drag.y) * 0.009;
+    drag.x = e.clientX; drag.y = e.clientY;
+    turn(dx, dy); drag.vx = dx; drag.vy = dy; drag.idle = 0;
+  });
+  const endDrag = () => { drag.on = false; };
+  canvasEl.addEventListener('pointerup', endDrag); canvasEl.addEventListener('pointercancel', endDrag);
+  if (isTouch) canvasEl.style.touchAction = 'none';
   async function leaveHero() {
-    // הפיצה מסתובבת מהר ועולה אל המצלמה, ואז מעבר רך לשולחן
-    const p0 = camera.position.clone();
-    await tween(0.75, (t) => {
-      heroVel = 6 * t;
-      heroTilt.position.y = 0.12 + t * 0.5;
-      camera.position.lerpVectors(p0, VIEW_HERO.target.clone().add(V(0, 0.9, 2.4)), t);
-    }, easeIn);
-    dissolve(0.8);
+    // מעבר רך (פייד) ישר לשולחן
+    dissolve(1.0);
     hero.visible = false; heroOn = false;
     controls.enabled = true;
+    if (isTouch) canvasEl.style.touchAction = 'pan-y';
     setView(VIEW_BUILD);
     doughBall.visible = true; doughBall.position.y = 2.4;
     state = 'dough';
+    await wait(0.35);
   }
   hero.visible = true; doughBall.visible = false; controls.enabled = false;
   let state = 'hero';
