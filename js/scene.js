@@ -945,6 +945,27 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
   paintBake(0);
 
 
+  /* ---------- גלגלת פיצה (משותפת לפתיחה ולקופסה) ---------- */
+  let cutMats = null;
+  function makeCutter(WR) {
+    const cutter = new THREE.Group();
+    const steel = std({ color: 0xeef0f3, metalness: 1, roughness: 0.28, envMapIntensity: 1.8 });
+    const steelD = std({ color: 0xb4b8c0, metalness: 1, roughness: 0.35, envMapIntensity: 1.5 });
+    const wood = std({ color: 0x5a3a22, roughness: 0.55, bumpMap: tex(noiseCanvas(128, 30, 60, 160), { srgb: false }), bumpScale: 0.3 });
+    const spinG = new THREE.Group(); spinG.name = 'spin'; spinG.position.y = WR; cutter.add(spinG);
+    const P2 = (x, y) => new THREE.Vector2(x, y);
+    const wheel = new THREE.Mesh(new THREE.LatheGeometry([P2(0, -0.012), P2(WR - 0.045, -0.012), P2(WR, -0.0015), P2(WR, 0.0015), P2(WR - 0.045, 0.012), P2(0, 0.012)], 160), steel);
+    wheel.rotation.z = Math.PI / 2; spinG.add(wheel);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.062, 32), steelD); hub.rotation.z = Math.PI / 2; spinG.add(hub);
+    const fork = new THREE.Group(); fork.position.y = WR; fork.rotation.x = 0.7; cutter.add(fork);
+    for (const sx of [-1, 1]) { const pl = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.07, 0.46), steelD); pl.position.set(sx * 0.03, 0, -0.2); fork.add(pl); }
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.08, 32), steelD); collar.rotation.x = Math.PI / 2; collar.position.z = -0.46; fork.add(collar);
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.05, 0.78, 40), wood); handle.rotation.x = Math.PI / 2; handle.position.z = -0.89; fork.add(handle);
+    const endCap = new THREE.Mesh(new THREE.SphereGeometry(0.058, 24, 12), wood); endCap.position.z = -1.28; endCap.scale.set(1, 1, 0.5); fork.add(endCap);
+    cutter.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    return { g: cutter, spin: spinG };
+  }
+
   /* =========================================================
      פתיחה: פיצה נפוליטנית מוכנה, מרחפת באוויר ומסתובבת
      ========================================================= */
@@ -1138,21 +1159,7 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
 
     // ---------- גלגלת פיצה ----------
     const WR = 0.32;
-    const cutter = new THREE.Group(); heroPizza.add(cutter);
-    const steel = std({ color: 0xeef0f3, metalness: 1, roughness: 0.28, envMapIntensity: 1.8 });
-    const steelD = std({ color: 0xb4b8c0, metalness: 1, roughness: 0.35, envMapIntensity: 1.5 });
-    const wood = std({ color: 0x5a3a22, roughness: 0.55, bumpMap: tex(noiseCanvas(128, 30, 60, 160), { srgb: false }), bumpScale: 0.3 });
-    const spinG = new THREE.Group(); spinG.position.y = WR; cutter.add(spinG);
-    const P2 = (x, y) => new THREE.Vector2(x, y);
-    const wheel = new THREE.Mesh(new THREE.LatheGeometry([P2(0, -0.012), P2(WR - 0.045, -0.012), P2(WR, -0.0015), P2(WR, 0.0015), P2(WR - 0.045, 0.012), P2(0, 0.012)], 160), steel);
-    wheel.rotation.z = Math.PI / 2; spinG.add(wheel);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.062, 32), steelD); hub.rotation.z = Math.PI / 2; spinG.add(hub);
-    const fork = new THREE.Group(); fork.position.y = WR; fork.rotation.x = 0.7; cutter.add(fork);
-    for (const sx of [-1, 1]) { const pl = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.07, 0.46), steelD); pl.position.set(sx * 0.03, 0, -0.2); fork.add(pl); }
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.08, 32), steelD); collar.rotation.x = Math.PI / 2; collar.position.z = -0.46; fork.add(collar);
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.05, 0.78, 40), wood); handle.rotation.x = Math.PI / 2; handle.position.z = -0.89; fork.add(handle);
-    const endCap = new THREE.Mesh(new THREE.SphereGeometry(0.058, 24, 12), wood); endCap.position.z = -1.28; endCap.scale.set(1, 1, 0.5); fork.add(endCap);
-    cutter.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    const { g: cutter, spin: spinG } = makeCutter(WR); heroPizza.add(cutter);
 
     const IDLE = V(RP * 0.5, 0, RP * 0.62);
     const cs = { on: false, hover: false, start: null, last: null, pos: IDLE.clone(), tgt: IDLE.clone(), head: -1.75, headT: -1.75, lift: 0.45, liftT: 0.45, roll: 0 };
@@ -1497,9 +1504,77 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
     ]);
     pizza.rotation.x = 0;
     viewNow = VIEW_BOX;
+    await slicePizza();
     steam();
     controls.enabled = true; FF = false;
     state = 'baked'; onStage('done');
+  }
+
+  /* ---------- חיתוך הפיצה במגש למשולשים ---------- */
+  const TAU2 = Math.PI * 2;
+  const inSpanA = (a, a0, sp) => ((a - a0) % TAU2 + TAU2) % TAU2 <= sp + 1e-6;
+  function sliceAt(P, cuts) {
+    const ud = P.userData;
+    if (!ud.sliceSrc) ud.sliceSrc = P.children.filter((c) => !c.userData.isCutter);
+    const src = ud.sliceSrc, old = ud.slices || [];
+    src.forEach((k) => { k.visible = false; });
+    const rays = cuts.flatMap((a) => [a, a + Math.PI]).map((a) => ((a % TAU2) + TAU2) % TAU2).sort((x, y) => x - y);
+    const spans = rays.map((a, i) => [a, i === rays.length - 1 ? rays[0] + TAU2 - a : rays[i + 1] - a]);
+    ud.slices = spans.map(([a0, span]) => {
+      const g = new THREE.Group(); P.add(g);
+      const planesL = [new THREE.Plane(V(-Math.sin(a0), 0, Math.cos(a0)), 0), new THREE.Plane(V(Math.sin(a0 + span), 0, -Math.cos(a0 + span)), 0)];
+      const planesW = planesL.map((q) => q.clone());
+      const mats = new Map();
+      const clip = (m) => { if (!mats.has(m)) { const c = m.clone(); c.clippingPlanes = planesW; c.side = THREE.DoubleSide; mats.set(m, c); } return mats.get(m); };
+      for (const k of src) {
+        const c = k.clone(); c.visible = true; g.add(c);
+        if (k === ud.toppings) {                       // תוספות נשארות שלמות, כל אחת עם המשולש שלה
+          c.children.slice().forEach((pc) => { if (!inSpanA((Math.atan2(pc.position.z, pc.position.x) + TAU2) % TAU2, a0, span)) c.remove(pc); });
+          continue;
+        }
+        c.traverse((o) => { if (o.material) o.material = Array.isArray(o.material) ? o.material.map(clip) : clip(o.material); });
+      }
+      const mid = a0 + span / 2, dist = Math.min(0.08, 0.022 / Math.sin(span / 2));
+      const prev = old.find((w) => inSpanA(mid, w.a0, w.span));
+      if (prev) g.position.copy(prev.g.position);
+      return { g, a0, span, planesL, planesW, mats: [...mats.values()], tgt: V(Math.cos(mid) * dist, 0, Math.sin(mid) * dist) };
+    });
+    old.forEach((w) => { P.remove(w.g); w.mats.forEach((m) => m.dispose()); });
+  }
+  function updateSlices(P, dt) {
+    const sl = P.userData.slices; if (!sl) return;
+    const k = 1 - Math.exp(-dt * 6);
+    for (const w of sl) w.g.position.lerp(w.tgt, k);
+    P.updateMatrixWorld(true);
+    for (const w of sl) w.planesL.forEach((q, i) => w.planesW[i].copy(q).applyMatrix4(w.g.matrixWorld));
+  }
+  async function slicePizza() {
+    const P = pizza, RZ = 1.36, WRb = 0.3;
+    renderer.localClippingEnabled = true;
+    // זוויות בעולם: קו אופקי ושני אלכסונים → 6 משולשים; ממירים למערכת של הפיצה
+    const worldA = [0, Math.PI / 3, -Math.PI / 3].map((a) => a + P.rotation.y);
+    if (FF) { sliceAt(P, worldA); return; }
+    const { g: cut, spin } = makeCutter(WRb); cut.userData.isCutter = true; P.add(cut);
+    const st = { pos: V(0, 0, 0), lift: 0.9, head: 0, roll: 0 };
+    const place = () => { cut.position.set(st.pos.x, 0.04 + st.lift, st.pos.z); cut.rotation.set(st.lift * 0.3, st.head, 0, 'YXZ'); spin.rotation.x = st.roll; };
+    const cuts = [];
+    let from = V(Math.cos(worldA[0]) * -RZ * 1.6, 0, Math.sin(worldA[0]) * -RZ * 1.6);
+    for (const a of worldA) {
+      const d = V(Math.cos(a), 0, Math.sin(a));
+      const A = d.clone().multiplyScalar(-RZ * 1.1), B = d.clone().multiplyScalar(RZ * 1.1);
+      const head = Math.atan2(d.x, d.z), h0 = st.head, l0 = st.lift, f0 = from.clone();
+      const dh = ((head - h0 + Math.PI) % TAU2 + TAU2) % TAU2 - Math.PI;
+      await tween(0.45, (t) => { st.pos.lerpVectors(f0, A, t); st.head = h0 + dh * t; st.lift = lerp(l0, 0.3, t); place(); }, easeInOut);
+      await tween(0.18, (t) => { st.lift = lerp(0.3, 0, t); place(); }, easeIn);
+      let last = 0;
+      await tween(0.85, (t) => { st.pos.lerpVectors(A, B, t); st.roll += (t - last) * RZ * 2.2 / WRb; last = t; place(); }, easeInOut);
+      cuts.push(a); sliceAt(P, cuts);
+      await tween(0.2, (t) => { st.lift = lerp(0, 0.3, t); place(); }, easeOut);
+      from = B;
+    }
+    const f0 = st.pos.clone(), out = V(RZ * 2.6, 0, -RZ * 0.4);
+    await tween(0.6, (t) => { st.pos.lerpVectors(f0, out, t); st.lift = lerp(0.3, 1.4, t); place(); }, easeIn);
+    P.remove(cut);
   }
 
   function snapshot(size = 320) {
@@ -1551,6 +1626,7 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
     if (!visible) return;
     updateTweens(); updateDrops();
     if (heroOn) updateHero(dt);
+    if (pizza.userData.slices) updateSlices(pizza, dt);
     if (rain && !rain.done) writeRain(now - rain.start);
     for (let i = puffs.length - 1; i >= 0; i--) {
       const p = puffs[i], age = now - p.born, a = p.pts.geometry.attributes.position;
