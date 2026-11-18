@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&family=Suez+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=26">
+  <link rel="stylesheet" href="css/style.css?v=27">
   <script type="importmap">
   { "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -61,6 +61,13 @@
           <div><dt>מגש</dt><dd id="factPrice">—</dd></div>
           <div><dt>הזמנות עד</dt><dd id="factClose">—</dd></div>
         </dl>
+        <div class="who" id="who">
+          <div class="row2">
+            <label class="field"><span>שם פרטי</span><input data-to="firstName" autocomplete="given-name"></label>
+            <label class="field"><span>שם משפחה</span><input data-to="lastName" autocomplete="family-name"></label>
+          </div>
+          <label class="field"><span>טלפון נייד</span><input data-to="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="050-0000000" dir="ltr"></label>
+        </div>
         <button class="btn btn-fire" id="startBtn">להכין פיצה</button>
       </div>
 
@@ -186,7 +193,7 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="js/config.js?v=26"></script>
-<script type="module" src="js/app.js?v=26"></script>
+<script src="js/config.js?v=27"></script>
+<script type="module" src="js/app.js?v=27"></script>
 </body>
 </html>

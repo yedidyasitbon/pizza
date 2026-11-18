@@ -172,6 +172,10 @@ a { color: inherit; }
 .field input:focus, .field textarea:focus { outline: none; border-color: var(--ember); }
 .field .bad { border-color: var(--danger) !important; }
 
+.who { display: grid; gap: 14px; margin: 0 0 26px; }
+.who .field > span { margin-bottom: 0; font-size: 12px; }
+.who .field input { font-size: 17px; padding: 6px 0 8px; }
+
 .slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .slot, .pay { position: relative; }
 .slot input, .pay input { position: absolute; top: 0; inset-inline-start: 0; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }

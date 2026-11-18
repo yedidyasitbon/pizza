@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder, fetchStatus, applyStatus } from './common.js?v=26';
+import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder, fetchStatus, applyStatus } from './common.js?v=27';
 
 const $ = (s, el = document) => el.querySelector(s);
 const panel = $('#panel');
@@ -36,7 +36,7 @@ const statusP = fetchStatus().then((st) => {
 /* ---------- הסצנה ---------- */
 let scene = null;
 try {
-  const { createPizzaScene } = await import('./scene.js?v=26');
+  const { createPizzaScene } = await import('./scene.js?v=27');
   scene = createPizzaScene($('#pizzaCanvas'), { fadeEl: $('#fade'), onCut: () => { if (!busy) $('#caption').classList.remove('show'); } });
   setTimeout(() => { if (!busy) caption('גררו את הגלגלת כדי לחתוך', 7000); }, 1200);
 } catch (e) {
@@ -187,6 +187,7 @@ $('#bakeBtn').addEventListener('click', async () => {
   setMode('oven');
 
   if (scene) {
+    scene.setBoxName?.(form.lastName.value);
     await scene.bake((s, p) => {
       if (s === 'baking') { timerStart(); caption('דקה וחצי, 450 מעלות'); }
       if (s === 'bakeProgress') timerTick(p);
@@ -265,6 +266,13 @@ loadSlots(); renderCart();
 
 /* ---------- שליחה ---------- */
 const form = $('#orderForm');
+form.lastName.addEventListener('change', () => scene?.setBoxName?.(form.lastName.value));
+// שדות הפרטים בפתיחה ממלאים את טופס ההזמנה (ושם המשפחה מופיע על המגש)
+document.querySelectorAll('#who input').forEach((inp) => {
+  const target = form[inp.dataset.to];
+  if (target.value) inp.value = target.value;
+  inp.addEventListener('input', () => { target.value = inp.value; target.classList.remove('bad'); if (inp.dataset.to === 'lastName') scene?.setBoxName?.(inp.value); });
+});
 form.addEventListener('input', (e) => { e.target.classList?.remove('bad'); });
 form.addEventListener('change', (e) => { e.target.closest('.slots,.pays')?.classList.remove('bad'); });
 form.addEventListener('submit', async (e) => {

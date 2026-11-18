@@ -909,8 +909,10 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
 
   /* ---------- מגש קרטון ---------- */
   const BOX_FLOOR = 0.03;
-  const pizzaBox = new THREE.Group();
-  {
+  let boxMats = null;
+  const BOX_W = 3.45, BOX_HH = 0.32, BOX_T = 0.025, BOX_H = BOX_HH + BOX_T / 2 + 0.004;
+  function makeBox() {
+    const pizzaBox = new THREE.Group();
     const kraft = (light) => {
       const c = cnv(512, 512), x = c.getContext('2d');
       x.fillStyle = light ? '#c9a274' : '#b48a5c'; x.fillRect(0, 0, 512, 512);
@@ -919,8 +921,9 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
         const px = R() * 512, py = R() * 512; x.beginPath(); x.moveTo(px, py); x.lineTo(px + rnd(-8, 8), py + rnd(-8, 8)); x.stroke(); }
       x.globalAlpha = 1; return c;
     };
-    const inM = std({ map: tex(kraft(true)), roughness: 0.95 }), outM = std({ map: tex(kraft(false)), roughness: 0.95 });
-    const W = 3.45, Hh = 0.32, T = 0.025;
+    boxMats = boxMats || { inM: std({ map: tex(kraft(true)), roughness: 0.95 }), outM: std({ map: tex(kraft(false)), roughness: 0.95 }) };
+    const { inM, outM } = boxMats;
+    const W = BOX_W, Hh = BOX_HH, T = BOX_T;
     const add = (g, m, x, y, z, parent = pizzaBox) => { const o = mesh(g, m); o.position.set(x, y, z); parent.add(o); return o; };
     add(new THREE.BoxGeometry(W, T, W), inM, 0, T / 2, 0);
     add(new THREE.BoxGeometry(W, Hh, T), inM, 0, Hh / 2, W / 2);
@@ -933,8 +936,31 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
     add(new THREE.BoxGeometry(T, Hh * 0.6, W * 0.9), outM, W / 2 + 0.02, -Hh * 0.3, W / 2, lid);
     add(new THREE.BoxGeometry(T, Hh * 0.6, W * 0.9), outM, -W / 2 - 0.02, -Hh * 0.3, W / 2, lid);
     pizzaBox.userData.lid = lid;
+    pizzaBox.visible = false; scene.add(pizzaBox);
+    return pizzaBox;
   }
-  pizzaBox.visible = false; scene.add(pizzaBox);
+  // מדבקה שחורה עם שם המשפחה, על החזית של המכסה
+  function labelBox(box, name) {
+    const lid = box.userData.lid; let st = box.userData.sticker;
+    if (!name) { if (st) st.visible = false; return; }
+    if (box.userData.label === name && st) { st.visible = true; return; }
+    const c = cnv(1024, 190), x = c.getContext('2d');
+    x.fillStyle = '#121010'; x.beginPath(); x.roundRect(6, 6, 1012, 178, 34); x.fill();
+    x.strokeStyle = 'rgba(255,255,255,.18)'; x.lineWidth = 4; x.beginPath(); x.roundRect(22, 22, 980, 146, 24); x.stroke();
+    const fam = getComputedStyle(document.body).fontFamily || 'sans-serif';
+    let fs = 112; x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#f6efe4';
+    do { x.font = `700 ${fs}px ${fam}`; fs -= 6; } while (x.measureText(name).width > 900 && fs > 40);
+    x.fillText(name, 512, 100);
+    const t = tex(c);
+    if (!st) {
+      st = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.232), new THREE.MeshStandardMaterial({ map: t, roughness: 0.45, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2 }));
+      st.position.set(0, -BOX_HH * 0.4, BOX_W + 0.04 + BOX_T / 2 + 0.003); lid.add(st); box.userData.sticker = st;
+    } else { st.material.map.dispose(); st.material.map = t; st.material.needsUpdate = true; }
+    st.visible = true; box.userData.label = name;
+  }
+  let boxName = '';
+  const pile = [];                                   // מגשים סגורים שכבר הוכנו — נערמים אחד על השני
+  let pizzaBox = makeBox();
   // הלהב מתחת לפיצה — לא חודר לתוכה
   const peelUnder = () => { peel.position.set(pizza.position.x, pizza.position.y - 0.016, pizza.position.z + 0.2); };
 
@@ -1504,8 +1530,9 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
     ]);
     pizza.rotation.x = 0;
     viewNow = VIEW_BOX;
-    await slicePizza();
     steam();
+    await slicePizza();
+    await closeBox();
     controls.enabled = true; FF = false;
     state = 'baked'; onStage('done');
   }
@@ -1513,12 +1540,15 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
   /* ---------- חיתוך הפיצה במגש למשולשים ---------- */
   const TAU2 = Math.PI * 2;
   const inSpanA = (a, a0, sp) => ((a - a0) % TAU2 + TAU2) % TAU2 <= sp + 1e-6;
-  function sliceAt(P, cuts) {
+  // כל קו חיתוך עובר במרכז; הפיצה נחתכת לפי הקווים, וכל קו נפתח (open 0→1) ברגע שהגלגלת עוברת
+  const SLICE_G = 0.022;
+  function sliceAt(P, lines) {
     const ud = P.userData;
     if (!ud.sliceSrc) ud.sliceSrc = P.children.filter((c) => !c.userData.isCutter);
     const src = ud.sliceSrc, old = ud.slices || [];
     src.forEach((k) => { k.visible = false; });
-    const rays = cuts.flatMap((a) => [a, a + Math.PI]).map((a) => ((a % TAU2) + TAU2) % TAU2).sort((x, y) => x - y);
+    ud.lines = lines;
+    const rays = lines.flatMap((l) => [l.a, l.a + Math.PI]).map((a) => ((a % TAU2) + TAU2) % TAU2).sort((x, y) => x - y);
     const spans = rays.map((a, i) => [a, i === rays.length - 1 ? rays[0] + TAU2 - a : rays[i + 1] - a]);
     ud.slices = spans.map(([a0, span]) => {
       const g = new THREE.Group(); P.add(g);
@@ -1526,55 +1556,103 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
       const planesW = planesL.map((q) => q.clone());
       const mats = new Map();
       const clip = (m) => { if (!mats.has(m)) { const c = m.clone(); c.clippingPlanes = planesW; c.side = THREE.DoubleSide; mats.set(m, c); } return mats.get(m); };
+      const near = (x, z) => {                         // תוספת שנוגעת במשולש הזה (גם אם רק חלק ממנה)
+        if (inSpanA((Math.atan2(z, x) + TAU2) % TAU2, a0, span)) return true;
+        return [a0, a0 + span].some((e) => x * Math.cos(e) + z * Math.sin(e) > -0.2 && Math.abs(-x * Math.sin(e) + z * Math.cos(e)) < 0.16);
+      };
       for (const k of src) {
         const c = k.clone(); c.visible = true; g.add(c);
-        if (k === ud.toppings) {                       // תוספות נשארות שלמות, כל אחת עם המשולש שלה
-          c.children.slice().forEach((pc) => { if (!inSpanA((Math.atan2(pc.position.z, pc.position.x) + TAU2) % TAU2, a0, span)) c.remove(pc); });
-          continue;
-        }
+        if (k === ud.toppings) c.children.slice().forEach((pc) => { if (!near(pc.position.x, pc.position.z)) c.remove(pc); });
         c.traverse((o) => { if (o.material) o.material = Array.isArray(o.material) ? o.material.map(clip) : clip(o.material); });
       }
-      const mid = a0 + span / 2, dist = Math.min(0.08, 0.022 / Math.sin(span / 2));
-      const prev = old.find((w) => inSpanA(mid, w.a0, w.span));
-      if (prev) g.position.copy(prev.g.position);
-      return { g, a0, span, planesL, planesW, mats: [...mats.values()], tgt: V(Math.cos(mid) * dist, 0, Math.sin(mid) * dist) };
+      const mid = a0 + span / 2;
+      return { g, a0, span, planesL, planesW, mats: [...mats.values()], mx: Math.cos(mid), mz: Math.sin(mid) };
     });
     old.forEach((w) => { P.remove(w.g); w.mats.forEach((m) => m.dispose()); });
+    updateSlices(P);
   }
-  function updateSlices(P, dt) {
-    const sl = P.userData.slices; if (!sl) return;
-    const k = 1 - Math.exp(-dt * 6);
-    for (const w of sl) w.g.position.lerp(w.tgt, k);
-    P.updateMatrixWorld(true);
+  function updateSlices(P) {
+    const ud = P.userData, sl = ud.slices; if (!sl) return;
+    for (const w of sl) {
+      let x = 0, z = 0;
+      for (const l of ud.lines) {                      // כל חצי מתרחק מהקו שלו
+        const nx = -Math.sin(l.a), nz = Math.cos(l.a), sg = Math.sign(nx * w.mx + nz * w.mz) || 1;
+        x += nx * sg * SLICE_G * l.o; z += nz * sg * SLICE_G * l.o;
+      }
+      w.g.position.set(x, 0, z);
+    }
+    P.updateWorldMatrix(true, true);
     for (const w of sl) w.planesL.forEach((q, i) => w.planesW[i].copy(q).applyMatrix4(w.g.matrixWorld));
   }
   async function slicePizza() {
     const P = pizza, RZ = 1.36, WRb = 0.3;
     renderer.localClippingEnabled = true;
-    // זוויות בעולם: קו אופקי ושני אלכסונים → 6 משולשים; ממירים למערכת של הפיצה
+    // קו אופקי ושני אלכסונים → 6 משולשים (זוויות בעולם, מומרות למערכת של הפיצה)
     const worldA = [0, Math.PI / 3, -Math.PI / 3].map((a) => a + P.rotation.y);
-    if (FF) { sliceAt(P, worldA); return; }
+    const lines = [];
+    if (FF) { worldA.forEach((a) => lines.push({ a, o: 1 })); sliceAt(P, lines); return; }
     const { g: cut, spin } = makeCutter(WRb); cut.userData.isCutter = true; P.add(cut);
-    const st = { pos: V(0, 0, 0), lift: 0.9, head: 0, roll: 0 };
+    const st = { pos: V(0, 0, 0), lift: 0.7, head: 0, roll: 0 };
     const place = () => { cut.position.set(st.pos.x, 0.04 + st.lift, st.pos.z); cut.rotation.set(st.lift * 0.3, st.head, 0, 'YXZ'); spin.rotation.x = st.roll; };
-    const cuts = [];
-    let from = V(Math.cos(worldA[0]) * -RZ * 1.6, 0, Math.sin(worldA[0]) * -RZ * 1.6);
+    const ang = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+    let curA = worldA[0] + Math.PI, first = true;      // מתחילים מהקצה השמאלי
     for (const a of worldA) {
-      const d = V(Math.cos(a), 0, Math.sin(a));
-      const A = d.clone().multiplyScalar(-RZ * 1.1), B = d.clone().multiplyScalar(RZ * 1.1);
-      const head = Math.atan2(d.x, d.z), h0 = st.head, l0 = st.lift, f0 = from.clone();
-      const dh = ((head - h0 + Math.PI) % TAU2 + TAU2) % TAU2 - Math.PI;
-      await tween(0.45, (t) => { st.pos.lerpVectors(f0, A, t); st.head = h0 + dh * t; st.lift = lerp(l0, 0.3, t); place(); }, easeInOut);
-      await tween(0.18, (t) => { st.lift = lerp(0.3, 0, t); place(); }, easeIn);
+      // מתחילים מהקצה הקרוב למקום שבו הגלגלת נמצאת
+      const s0 = Math.abs(ang(a - curA)) < Math.abs(ang(a + Math.PI - curA)) ? a : a + Math.PI;
+      const S = V(Math.cos(s0) * RZ * 1.08, 0, Math.sin(s0) * RZ * 1.08), E = S.clone().negate();
+      const head = Math.atan2(E.x - S.x, E.z - S.z);
+      if (first) { st.pos.copy(S); st.head = head; place(); await tween(0.18, (t) => { st.lift = lerp(0.7, 0, t); place(); }, easeOut); first = false; }
+      else {
+        const f0 = st.pos.clone(), h0 = st.head, dh = ang(head - h0);
+        await tween(0.12, (t) => { st.pos.lerpVectors(f0, S, t); st.head = h0 + dh * t; st.lift = Math.sin(t * Math.PI) * 0.12; place(); }, easeInOut);
+      }
+      const line = { a, o: 0 }; lines.push(line); sliceAt(P, lines);
       let last = 0;
-      await tween(0.85, (t) => { st.pos.lerpVectors(A, B, t); st.roll += (t - last) * RZ * 2.2 / WRb; last = t; place(); }, easeInOut);
-      cuts.push(a); sliceAt(P, cuts);
-      await tween(0.2, (t) => { st.lift = lerp(0, 0.3, t); place(); }, easeOut);
-      from = B;
+      await tween(0.3, (t) => {
+        st.pos.lerpVectors(S, E, t); st.roll += (t - last) * RZ * 2.16 / WRb; last = t; place();
+        line.o = clamp01(t * 1.15);                    // החלק שמאחורי הגלגלת נפתח מיד
+      }, (t) => t);
+      line.o = 1; curA = s0 + Math.PI;
     }
-    const f0 = st.pos.clone(), out = V(RZ * 2.6, 0, -RZ * 0.4);
-    await tween(0.6, (t) => { st.pos.lerpVectors(f0, out, t); st.lift = lerp(0.3, 1.4, t); place(); }, easeIn);
+    const f0 = st.pos.clone(), out = st.pos.clone().multiplyScalar(1.9);
+    await tween(0.2, (t) => { st.pos.lerpVectors(f0, out, t); st.lift = lerp(0, 1.2, t); place(); }, easeIn);
     P.remove(cut);
+  }
+
+  // המכסה נסגר; אם כבר יש מגשים מוכנים — המגש החדש עולה על הערימה
+  const stackView = (h) => mkView(V(1.0, 4.3 + h * 0.8, 8.4 + h * 1.0), V(0, 0.25 + h * 0.5, 0.1));
+  async function closeBox() {
+    const box = pizzaBox, lid = box.userData.lid;
+    box.attach(pizza);
+    labelBox(box, boxName);
+    const v0 = curView(), v1 = stackView(0);
+    await Promise.all([
+      FF ? null : lookTween(v0, v1, 0.9),
+      tween(FF ? 0.01 : 0.7, (t) => { lid.rotation.x = lerp(-1.85, 0, t); }, (t) => { const e = easeInOut(t); return e + Math.sin(t * Math.PI) * 0.04 * (1 - t); })
+    ]);
+    lid.rotation.x = 0;
+    let view = v1;
+    while (pile.length > 4) scene.remove(pile.shift());
+    if (pile.length) {
+      const n = pile.length, top = n * BOX_H;
+      pile.forEach((b, i) => { b.visible = true; b.position.set(-7, i * BOX_H, 0); labelBox(b, boxName || b.userData.label); });
+      view = stackView(top + BOX_H);
+      const pv = curView();
+      await Promise.all([
+        FF ? null : lookTween(pv, view, 1.2),
+        tween(FF ? 0.01 : 0.5, (t) => { box.position.y = lerp(0, top + 0.35, t); }, easeOut),
+        tween(FF ? 0.01 : 0.8, (t) => { pile.forEach((b) => { b.position.x = lerp(-7, 0, t); }); }, easeInOut),
+      ]);
+      await tween(FF ? 0.01 : 0.35, (t) => { box.position.y = lerp(top + 0.35, top, t) + Math.sin(t * Math.PI) * 0.02; }, easeIn);
+      box.position.y = top;
+    }
+    if (!FF) setView(view); else { camera.position.copy(view.pos); controls.target.copy(view.target); controls.update(); }
+    viewNow = view;
+  }
+  function setBoxName(name) {
+    boxName = (name || '').trim();
+    pile.forEach((b) => labelBox(b, boxName));
+    if (pizzaBox.visible && pizzaBox.userData.lid.rotation.x === 0) labelBox(pizzaBox, boxName);
   }
 
   function snapshot(size = 320) {
@@ -1588,12 +1666,17 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
   async function newPizza() {
     const old = pizza; state = 'intro';
     const bx = pizzaBox.visible;
+    const movers = bx ? [pizzaBox, ...pile] : [old];
     await Promise.all([
       lookTween(curView(), VIEW_BUILD, 0.8),
-      tween(0.8, (t) => { old.position.x = lerp(0, -7, t); if (bx) pizzaBox.position.x = lerp(0, -7, t); }, easeIn)
+      tween(0.8, (t) => { movers.forEach((m) => { m.position.x = lerp(0, -7, t); }); }, easeIn)
     ]);
     viewNow = VIEW_BUILD;
-    scene.remove(old); pizzaBox.visible = false; pizzaBox.position.x = 0;
+    if (bx) {
+      pizzaBox.remove(old); pile.push(pizzaBox);          // המגש הסגור נשמר לערימה
+      pile.forEach((b) => { b.visible = false; });
+      pizzaBox = makeBox();
+    } else scene.remove(old);
     pizza = buildPizza(); paintBake(0);
     pizza.position.x = 6; scene.add(pizza);
     pizza.userData.sauce.visible = false;
@@ -1626,7 +1709,7 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
     if (!visible) return;
     updateTweens(); updateDrops();
     if (heroOn) updateHero(dt);
-    if (pizza.userData.slices) updateSlices(pizza, dt);
+    if (pizza.userData.slices) updateSlices(pizza);
     if (rain && !rain.done) writeRain(now - rain.start);
     for (let i = puffs.length - 1; i >= 0; i--) {
       const p = puffs[i], age = now - p.born, a = p.pts.geometry.attributes.position;
@@ -1667,7 +1750,7 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
   loop();
 
   return {
-    playIntro, skipIntro, fastForward, setBase, setToppings, bake, newPizza, snapshot,
+    playIntro, skipIntro, fastForward, setBase, setToppings, bake, newPizza, snapshot, setBoxName,
     get state() { return state; }
   };
 }
