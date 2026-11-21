@@ -51,6 +51,10 @@
     .items { margin: 4px 0 0; padding: 0; list-style: none; }
     .items li { padding: 2px 0; }
     .items li b { color: var(--ember); }
+    .items li { display: flex; align-items: flex-start; gap: 6px; }
+    .items .pzs { display: inline-flex; gap: 4px; flex: none; }
+    .items .pz { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--olive); }
+    .items li.pz-done { text-decoration: line-through; color: var(--soft); }
     .notes { margin-top: 4px; font-size: 14px; background: #fff4e6; border-radius: 8px; padding: 4px 8px; display: inline-block; }
     .pay { text-align: left; font-size: 14px; color: var(--soft); white-space: nowrap; }
     .pay b { display: block; color: var(--ink); font-size: 16px; }
@@ -113,7 +117,7 @@
 </div></header>
 <dialog id="editDlg"><form id="editForm" method="dialog"></form></dialog>
 <main class="wrap" id="out"></main>
-<script src="js/config.js?v=28"></script>
-<script type="module" src="js/report.js?v=28"></script>
+<script src="js/config.js?v=29"></script>
+<script type="module" src="js/report.js?v=29"></script>
 </body>
 </html>

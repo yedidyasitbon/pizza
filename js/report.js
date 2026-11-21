@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit, closeDate, heDay, fetchStatus, applyStatus, saveStatus, thisWeekSale, regularClose, OPEN_UNTIL } from './common.js?v=28';
+import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit, closeDate, heDay, fetchStatus, applyStatus, saveStatus, thisWeekSale, regularClose, OPEN_UNTIL } from './common.js?v=29';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -34,6 +34,8 @@ async function load(quiet = false) {
 function render(date) {
   const doneKey = `pizza.done.${date}`;
   const done = new Set(JSON.parse(store.get(doneKey) || '[]'));
+  const pzKey = `pizza.donePz.${date}`;                       // סימון לכל פיצה בנפרד
+  const pz = new Set(JSON.parse(store.get(pzKey) || '[]'));
   const pizzas = orders.reduce((s, o) => s + Number(o.pizzaCount), 0);
   const money = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
   const byPay = {};
@@ -66,10 +68,14 @@ function render(date) {
     html += `<section class="slot"><div class="slot-h"><span class="t">${esc(s)}</span><span class="c">${n} פיצות · ${list.length} הזמנות</span></div>`;
     for (const o of list) {
       const items = (o.items && o.items.length)
-        ? o.items.map((it) => `<li><b>${it.qty}×</b> ${esc(it.base)}${it.toppings.length ? ' — ' + esc(it.toppings.join(', ')) : ''}</li>`).join('')
+        ? o.items.map((it, i) => {
+            const ids = Array.from({ length: it.qty }, (_, k) => `${o.orderNo}:${i}:${k}`);
+            const all = ids.every((id) => pz.has(id) || done.has(o.orderNo));
+            return `<li class="${all ? 'pz-done' : ''}"><span class="pzs">${ids.map((id) => `<input type="checkbox" class="pz" data-pz="${id}" ${pz.has(id) || done.has(o.orderNo) ? 'checked' : ''} aria-label="פיצה הוכנה">`).join('')}</span><b>${it.qty}×</b> ${esc(it.base)}${it.toppings.length ? ' — ' + esc(it.toppings.join(', ')) : ''}</li>`;
+          }).join('')
         : esc(o.itemsText).split('\n').map((l) => `<li>${l}</li>`).join('');
       html += `<div class="ord ${done.has(o.orderNo) ? 'done' : ''}" data-no="${o.orderNo}">
-        <input type="checkbox" ${done.has(o.orderNo) ? 'checked' : ''} aria-label="הוכן">
+        <input type="checkbox" class="ord-cb" ${done.has(o.orderNo) ? 'checked' : ''} aria-label="כל ההזמנה הוכנה">
         <div class="no">#${o.orderNo}</div>
         <div><div class="who">${esc(o.firstName)} ${esc(o.lastName)}<a href="tel:${esc(o.phone)}">${esc(fmtPhone(o.phone))}</a></div>
           <ul class="items">${items}</ul>${o.notes ? `<div class="notes">${esc(o.notes)}</div>` : ''}</div>
@@ -80,11 +86,24 @@ function render(date) {
     html += '</section>';
   }
   $('#out').innerHTML = html;
-  $('#out').querySelectorAll('.ord input').forEach((cb) => cb.addEventListener('change', () => {
+  const save = () => { store.set(doneKey, JSON.stringify([...done])); store.set(pzKey, JSON.stringify([...pz])); };
+  const paintLis = (el) => el.querySelectorAll('.items li').forEach((li) => {
+    const cbs = [...li.querySelectorAll('.pz')]; if (cbs.length) li.classList.toggle('pz-done', cbs.every((c) => c.checked));
+  });
+  // וי על כל ההזמנה מסמן את כל הפיצות שבה (ולהפך)
+  $('#out').querySelectorAll('.ord-cb').forEach((cb) => cb.addEventListener('change', () => {
     const el = cb.closest('.ord'), no = Number(el.dataset.no);
     cb.checked ? done.add(no) : done.delete(no);
-    el.classList.toggle('done', cb.checked);
-    store.set(doneKey, JSON.stringify([...done]));
+    el.querySelectorAll('.pz').forEach((p) => { p.checked = cb.checked; cb.checked ? pz.add(p.dataset.pz) : pz.delete(p.dataset.pz); });
+    el.classList.toggle('done', cb.checked); paintLis(el); save();
+  }));
+  // וי על פיצה; כשכל הפיצות מסומנות — כל ההזמנה מסומנת
+  $('#out').querySelectorAll('.pz').forEach((p) => p.addEventListener('change', () => {
+    const el = p.closest('.ord'), no = Number(el.dataset.no), ocb = el.querySelector('.ord-cb');
+    p.checked ? pz.add(p.dataset.pz) : pz.delete(p.dataset.pz);
+    const all = [...el.querySelectorAll('.pz')].every((c) => c.checked);
+    ocb.checked = all; all ? done.add(no) : done.delete(no);
+    el.classList.toggle('done', all); paintLis(el); save();
   }));
 }
 
