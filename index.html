@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&family=Suez+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=29">
+  <link rel="stylesheet" href="css/style.css?v=30">
   <script type="importmap">
   { "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -54,7 +54,7 @@
       <div class="pane pane-intro">
         <p class="eyebrow">מכירה שבועית ביישוב</p>
         <h1 class="display">פיצה איטלקית<br><em>מטאבון</em></h1>
-        <p class="lead">בצק שתופח כ-48 שעות, נפתח ונאפה בטאבון. פיצה אוורירית וטעימה. מזמינים כאן, בוחרים שעת הכנה, והפיצה שלכם תהיה מוכנה.</p>
+        <p class="lead">בצק שתופח כ-48 שעות, נפתח ונאפה בטאבון. פיצה אוורירית וטעימה. מזמינים כאן, בוחרים שעה, ובאים לאסוף את הפיצה חמה מהטאבון.</p>
         <dl class="facts">
           <div><dt>יום ההכנה הבא:</dt><dd id="factDay">—</dd></div>
           <div><dt>שעות</dt><dd id="factHours">—</dd></div>
@@ -143,6 +143,7 @@
           <fieldset class="field">
             <legend>שעת הכנה <small id="slotDay"></small></legend>
             <div class="slots" id="slots"></div>
+            <p class="pickup-note">בשעה שבחרתם הפיצה יוצאת מהטאבון. באים לאסוף אותה בשעה הזו.</p>
           </fieldset>
 
           <fieldset class="field">
@@ -171,7 +172,7 @@
       <ol class="how">
         <li><b>מזמינים</b><span id="howClose">עד יום שני בבוקר.</span></li>
         <li><b>בוחרים תוספות</b><span id="howTop">2 כלולות במחיר, כל נוספת 2 ₪.</span></li>
-        <li><b>סוגרים שעת הכנה</b><span>שהפיצה שלכם תהיה מוכנה.</span></li>
+        <li><b>בוחרים שעה</b><span>ובאים לאסוף את הפיצה חמה מהטאבון.</span></li>
       </ol>
     </div>
   </section>
@@ -193,7 +194,7 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="js/config.js?v=29"></script>
-<script type="module" src="js/app.js?v=29"></script>
+<script src="js/config.js?v=30"></script>
+<script type="module" src="js/app.js?v=30"></script>
 </body>
 </html>

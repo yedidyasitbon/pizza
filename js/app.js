@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder, fetchStatus, applyStatus } from './common.js?v=29';
+import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder, fetchStatus, applyStatus } from './common.js?v=30';
 
 const $ = (s, el = document) => el.querySelector(s);
 const panel = $('#panel');
@@ -40,7 +40,7 @@ const statusP = fetchStatus().then((st) => {
 /* ---------- הסצנה ---------- */
 let scene = null;
 try {
-  const { createPizzaScene } = await import('./scene.js?v=29');
+  const { createPizzaScene } = await import('./scene.js?v=30');
   scene = createPizzaScene($('#pizzaCanvas'), { fadeEl: $('#fade'), onCut: () => { if (!busy) $('#caption').classList.remove('show'); } });
   setTimeout(() => { if (!busy) caption('גררו את הגלגלת כדי לחתוך', 7000); }, 1200);
 } catch (e) {
@@ -126,7 +126,7 @@ function skipAhead() { if (introP) scene?.fastForward(); }
 $('#startBtn').addEventListener('click', async () => {
   setMode('build'); busy = true;
   if (scene) {
-    introP = scene.playIntro((s) => caption(s === 'sauce' ? (cur.base === 'red' ? 'רוטב עגבניות' : 'שמן זית ושום') : INTRO[s], s === 'ready' ? 2200 : 0));
+    introP = scene.playIntro((s) => caption(s === 'sauce' ? (cur.base === 'red' ? 'רוטב עגבניות' : 'רוטב שמנת ושום') : INTRO[s], s === 'ready' ? 2200 : 0));
     await introP; introP = null;
   }
   busy = false;
@@ -324,8 +324,8 @@ function showDone(o, no) {
   $('#ddNo').textContent = `הזמנה מס׳ ${no} · ${heDate(saleDate)} בשעה ${o.slot}`;
   const amount = P ? ` ${money(o.total)}` : '';
   $('#ddBody').innerHTML = o.payment === 'מזומן'
-    ? `<p>הפיצה תהיה מוכנה ב-${o.slot}, תשלום במזומן.</p>`
-    : `<div class="dd-pay"><div>להעביר${amount} ב${o.payment} למספר:</div>
+    ? `<p>הפיצה תהיה מוכנה ב-${o.slot}. באים לאסוף בשעה הזו, ומשלמים במזומן באיסוף.</p>`
+    : `<p>הפיצה תהיה מוכנה ב-${o.slot}. באים לאסוף בשעה הזו.</p><div class="dd-pay"><div>להעביר${amount} ב${o.payment} למספר:</div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="big">${fmtPhone(cfg.payPhone)}</span><button type="button" class="copy" id="copyNum">העתקה</button></div>
         <div class="c-desc">כדאי לרשום בהעברה את השם.</div>
         ${o.payment === 'ביט' && cfg.bitLink ? `<a class="btn btn-fire btn-wide bit-go" href="${cfg.bitLink}" target="_blank" rel="noopener">לתשלום בביט${amount}</a>` : ''}

@@ -155,9 +155,12 @@ function sauceCanvas(kind) {
     for (let i = 0; i < 160; i++) spot(x, R() * S, R() * S, rnd(3, 9), rnd(3, 9), '#e8683a', 0.35, 0.4);
     speckle(x, S, S, 120, ['#4a3a14', '#5b4a1a'], 0.6, 1.4, 0.6);
   } else {
-    x.fillStyle = '#efe2c4'; x.fillRect(0, 0, S, S);
-    for (let i = 0; i < 200; i++) spot(x, R() * S, R() * S, rnd(12, 70), rnd(12, 70), R() > 0.4 ? '#dcb862' : '#f7efdc', 0.3, 0.2);
-    speckle(x, S, S, 700, ['#2a2420', '#4e4236'], 0.6, 1.7, 0.8);
+    // רוטב שמנת ושום: לבן־שמנתי, חלק ומבריק, עם פסי מריחה, פירורי שום ומעט פלפל
+    x.fillStyle = '#f1e9d6'; x.fillRect(0, 0, S, S);
+    for (let i = 0; i < 260; i++) spot(x, R() * S, R() * S, rnd(12, 70), rnd(12, 70), R() > 0.5 ? '#e5d6b2' : '#fbf7ec', 0.3, 0.2);
+    swirl(x, S, ['rgba(255,252,244,0.35)', 'rgba(214,196,156,0.25)'], 2.2);
+    for (let i = 0; i < 260; i++) spot(x, R() * S, R() * S, rnd(2, 6), rnd(2, 6), R() > 0.5 ? '#e8d48e' : '#f6ecc4', 0.7, 0.3);
+    speckle(x, S, S, 160, ['#2a2420', '#4e4236'], 0.5, 1.3, 0.7);
   }
   return c;
 }
@@ -1348,6 +1351,9 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
     const sauce = pizza.userData.sauce;
     sauce.visible = true; sauce.scale.setScalar(0.001);
     const center = pizza.position.clone();
+    const inMat = ladle.userData.sauceIn.material;
+    const tintLadle = () => inMat.color.set(baseKind === 'white' ? 0xf0e6cf : 0xc23716);   // הרוטב במצקת בצבע של הבסיס שנבחר
+    tintLadle();
     ladle.visible = true; ladle.userData.sauceIn.scale.setScalar(1);
     ladle.position.set(center.x, 1.6, center.z); ladle.rotation.set(0, 0, 0);
     await tween(0.5, (t) => { ladle.position.y = lerp(1.6, 0.07, t); }, easeOut);
@@ -1359,6 +1365,7 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
       sauce.scale.setScalar(Math.max(0.02, r / 1.21 + 0.1 * (1 - t)));
       sauce.rotation.y = -th * 0.15;
       ladle.userData.sauceIn.scale.setScalar(Math.max(0.05, 1 - t));
+      tintLadle();
     }, (t) => t);
     sauce.scale.setScalar(1);
     await tween(0.5, (t) => { ladle.position.y = lerp(0.07, 1.8, t); ladle.position.x += 0.04; }, easeIn);

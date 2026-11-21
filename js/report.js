@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit, closeDate, heDay, fetchStatus, applyStatus, saveStatus, thisWeekSale, regularClose, OPEN_UNTIL } from './common.js?v=29';
+import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit, closeDate, heDay, fetchStatus, applyStatus, saveStatus, thisWeekSale, regularClose, OPEN_UNTIL } from './common.js?v=30';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -122,7 +122,7 @@ function csv() {
 function waLink(o) {
   const p = String(o.phone).replace(/\D/g, '').replace(/^0/, '972');
   const lines = String(o.itemsText || '').split('\n').filter(Boolean);
-  const text = [`היי ${o.firstName}, הפיצה שלך מוכנה!`, ...lines, o.total ? `סה״כ ${o.total} ₪ (${o.payment})` : '', 'אפשר לבוא לאסוף'].filter(Boolean).join('\n');
+  const text = [`היי ${o.firstName}, הפיצה שלכם מוכנה!`, ...lines, o.total ? `סה״כ ${o.total} ₪ (${o.payment})` : '', 'בואו לאסוף לפני שתתקרר'].filter(Boolean).join('\n');
   return `https://api.whatsapp.com/send?phone=${p}&text=${encodeURIComponent(text)}`;
 }
 
