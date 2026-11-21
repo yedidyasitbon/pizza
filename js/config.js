@@ -19,8 +19,8 @@ window.PIZZA_CONFIG = {
   // כמה מגשים לכל היותר בכל חצי שעה. 0 = בלי הגבלה
   maxPizzasPerSlot: 8,
   // כמה תוספות לכל היותר למגש
-  freeToppings: 3,          // תוספות כלולות במחיר המגש
-  extraToppingPrice: 3,     // מחיר כל תוספת מעבר לכלולות
+  freeToppings: 2,          // תוספות כלולות במחיר המגש (הראשונות שנבחרו)
+  extraToppingPrice: 2,     // ברירת מחדל לתוספת נוספת; מחיר לכל תוספת — בשדה price שלה
   maxToppings: 9,
 
   payPhone: "0526700461",
@@ -31,20 +31,21 @@ window.PIZZA_CONFIG = {
   showPrices: true,
 
   bases: [
-    { id: "red",   name: "אדומה", desc: "רוטב עגבניות וגבינה צהובה", price: 20 },
-    { id: "white", name: "לבנה",  desc: "גבינה צהובה, שמן זית ושום",  price: 20 }
+    { id: "red",   name: "אדומה", desc: "רוטב עגבניות וגבינה צהובה", price: 25 },
+    { id: "white", name: "לבנה",  desc: "גבינה צהובה, שמן זית ושום",  price: 25 }
   ],
 
   // id באנגלית קשור לצורה התלת־ממדית — לא לשנות. שם, תיאור ומחיר אפשר לשנות
+  // price = כמה עולה התוספת כשהיא מעבר לכלולות במגש
   toppings: [
-    { id: "greenOlive", name: "זיתים ירוקים",  desc: "",           price: 0 },
-    { id: "kalamata",   name: "זיתי קלמטה",    desc: "",    price: 0 },
-    { id: "tuna",       name: "טונה",          desc: "",                price: 0 },
-    { id: "onion",      name: "בצל סגול",      desc: "",           price: 0 },
-    { id: "tomato",     name: "עגבניות שרי",   desc: "",    price: 0 },
-    { id: "chili",      name: "פלפל חריף",     desc: "",    price: 0 },
-    { id: "feta",       name: "בולגרית",       desc: "",          price: 0 },
-    { id: "garlic",     name: "שום קונפי",     desc: "",                price: 0 },
-    { id: "corn",       name: "תירס",          desc: "",                price: 0 }
+    { id: "greenOlive", name: "זיתים ירוקים",  desc: "",           price: 2 },
+    { id: "kalamata",   name: "זיתי קלמטה",    desc: "",    price: 2 },
+    { id: "tuna",       name: "טונה",          desc: "",                price: 3 },
+    { id: "onion",      name: "בצל סגול",      desc: "",           price: 2 },
+    { id: "tomato",     name: "עגבניות שרי",   desc: "",    price: 2 },
+    { id: "chili",      name: "פלפל חריף",     desc: "",    price: 2 },
+    { id: "feta",       name: "בולגרית",       desc: "",          price: 3 },
+    { id: "garlic",     name: "שום קונפי",     desc: "",                price: 2 },
+    { id: "corn",       name: "תירס",          desc: "",                price: 2 }
   ]
 };

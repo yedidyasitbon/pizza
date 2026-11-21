@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder, fetchStatus, applyStatus } from './common.js?v=27';
+import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder, fetchStatus, applyStatus } from './common.js?v=28';
 
 const $ = (s, el = document) => el.querySelector(s);
 const panel = $('#panel');
@@ -9,7 +9,11 @@ let saleDate, saleKey;
 const hours = `${cfg.timeSlots[0]} עד ${cfg.timeSlots[cfg.timeSlots.length - 1]}`;
 $('#factHours').textContent = hours;
 $('#factPrice').textContent = P ? `${money(cfg.bases[0].price)}` : '—';
-$('#howTop').textContent = `${FREE} כלולות במחיר, כל נוספת ${money(EXTRA)}.`;
+{
+  const ps = [...new Set(cfg.toppings.map((t) => t.price || EXTRA))].sort((a, b) => a - b), low = ps[0];
+  const hi = cfg.toppings.filter((t) => (t.price || EXTRA) > low);
+  $('#howTop').textContent = `${FREE} כלולות במחיר, כל נוספת ${money(low)}` + (hi.length ? ` (${hi.map((t) => t.name).join(' ו')} ${money(Math.max(...hi.map((t) => t.price)))})` : '') + '.';
+}
 document.querySelectorAll('.pay .num').forEach((el) => { el.textContent = fmtPhone(cfg.payPhone); });
 
 /* ---------- פרטי המכירה (מתעדכן לפי מצב הפתיחה בדף הניהול) ---------- */
@@ -36,7 +40,7 @@ const statusP = fetchStatus().then((st) => {
 /* ---------- הסצנה ---------- */
 let scene = null;
 try {
-  const { createPizzaScene } = await import('./scene.js?v=27');
+  const { createPizzaScene } = await import('./scene.js?v=28');
   scene = createPizzaScene($('#pizzaCanvas'), { fadeEl: $('#fade'), onCut: () => { if (!busy) $('#caption').classList.remove('show'); } });
   setTimeout(() => { if (!busy) caption('גררו את הגלגלת כדי לחתוך', 7000); }, 1200);
 } catch (e) {
@@ -51,7 +55,8 @@ try { cart = JSON.parse(sessionStorage.getItem('pizza.cart') || '[]'); } catch {
 const saveCart = () => { try { sessionStorage.setItem('pizza.cart', JSON.stringify(cart)); } catch {} };
 const baseById = (id) => cfg.bases.find((b) => b.id === id);
 const topById = (id) => cfg.toppings.find((t) => t.id === id);
-const pizzaPrice = (p) => baseById(p.base).price + Math.max(0, p.toppings.length - FREE) * EXTRA;
+const topPrice = (id) => topById(id)?.price || EXTRA;
+const pizzaPrice = (p) => baseById(p.base).price + p.toppings.slice(FREE).reduce((s, id) => s + topPrice(id), 0);
 const pizzaDesc = (p) => (p.toppings.length ? p.toppings.map((id) => topById(id).name).join(' · ') : 'בלי תוספות');
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -94,7 +99,7 @@ function syncToppings() {
     const on = cur.toppings.includes(b.dataset.id);
     b.setAttribute('aria-pressed', on);
     const extra = on ? cur.toppings.indexOf(b.dataset.id) >= FREE : cur.toppings.length >= FREE;
-    b.querySelector('.opt-price').textContent = P && extra ? `+${money(EXTRA)}` : '';
+    b.querySelector('.opt-price').textContent = P && extra ? `+${money(topPrice(b.dataset.id))}` : '';
     b.setAttribute('aria-disabled', full && !on);
   });
   const c = $('#topCount');

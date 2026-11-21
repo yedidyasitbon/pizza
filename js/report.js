@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit, closeDate, heDay, fetchStatus, applyStatus, saveStatus, thisWeekSale, regularClose, OPEN_UNTIL } from './common.js?v=27';
+import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit, closeDate, heDay, fetchStatus, applyStatus, saveStatus, thisWeekSale, regularClose, OPEN_UNTIL } from './common.js?v=28';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -127,7 +127,8 @@ $('#weeks').addEventListener('click', (e) => {
 /* ---------- מחיקה ועריכה ---------- */
 const FREE = cfg.freeToppings ?? 3, EXTRA = cfg.extraToppingPrice ?? 3;
 const basePrice = (name) => (cfg.bases.find((b) => b.name === name) || cfg.bases[0]).price;
-const itemPrice = (it) => basePrice(it.base) + Math.max(0, it.toppings.length - FREE) * EXTRA;
+const topPriceN = (name) => cfg.toppings.find((t) => t.name === name)?.price || EXTRA;
+const itemPrice = (it) => basePrice(it.base) + it.toppings.slice(FREE).reduce((s, n) => s + topPriceN(n), 0);
 let editing = null;
 
 $('#out').addEventListener('click', async (e) => {
