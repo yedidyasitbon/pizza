@@ -450,7 +450,7 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
       [M.feta, C('#f0d7a4'), 0.5],
       ...M.garlic.map((m) => [m, C('#b9783a')]),
       ...M.corn.map((m) => [m, m.color.clone().lerp(C('#d9952a'), 0.45), 0.3]),
-      ...M.sweet.map((m) => [m, m.color.clone().lerp(C('#a8501a'), 0.35), 0.4])
+      ...M.sweet.map((m) => [m, m.color.clone().lerp(C('#8a3f12'), 0.42), 0.4])
     ];
     return _bl;
   }
@@ -549,8 +549,8 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
         const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
         p.setXYZ(i, x * (1 + Math.sin(y * 70 + k) * 0.06), y * (1 + Math.sin(z * 60 + k * 2) * 0.05), z * (1 + Math.sin(x * 65 + k * 3) * 0.06));
         const e = Math.abs(x) / 0.036 + Math.abs(y) / 0.031 + Math.abs(z) / 0.034;            // קרוב לפינה/שוליים = גדול יותר
-        const d = 1 - Math.max(0, Math.min(1, (e - 1.7) / 1.1)) * 0.55 - (y > 0.02 ? 0.08 : 0); // פינות ושוליים שחומים
-        col.push(d, Math.pow(d, 1.5), Math.pow(d, 2));
+        const d = 1 - Math.pow(Math.max(0, Math.min(1, (e - 1.3) / 1.0)), 0.8) * 0.72 - (y > 0.02 ? 0.1 : 0); // פינות ושוליים שחומים
+        col.push(d, Math.pow(d, 1.9), Math.pow(d, 2.6));
       }
       g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals();
       return g;
