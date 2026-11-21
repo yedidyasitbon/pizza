@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const SPEED = REDUCED ? 0.4 : 1;
@@ -448,7 +449,8 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
       ...M.chili.map((m) => [m, C('#4c7d26'), 0.35]),
       [M.feta, C('#f0d7a4'), 0.5],
       ...M.garlic.map((m) => [m, C('#b9783a')]),
-      ...M.corn.map((m) => [m, m.color.clone().lerp(C('#d9952a'), 0.45), 0.3])
+      ...M.corn.map((m) => [m, m.color.clone().lerp(C('#d9952a'), 0.45), 0.3]),
+      ...M.sweet.map((m) => [m, m.color.clone().lerp(C('#a8501a'), 0.35), 0.4])
     ];
     return _bl;
   }
@@ -538,6 +540,21 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
       }
       g.computeVertexNormals(); return g;
     })();
+    // בטטה מטוגנת: קוביות כתומות עם פינות ושוליים מקורמלים
+    M.sweet = ['#e9822f', '#e17526', '#ee8f3a'].map((c) => std({ color: c, roughness: 0.42, envMapIntensity: 0.6, vertexColors: true }));
+    G.sweet = [0, 1, 2].map((k) => {
+      const g = new RoundedBoxGeometry(0.072, 0.062, 0.068, 3, 0.014);
+      const p = g.attributes.position, col = [];
+      for (let i = 0; i < p.count; i++) {
+        const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+        p.setXYZ(i, x * (1 + Math.sin(y * 70 + k) * 0.06), y * (1 + Math.sin(z * 60 + k * 2) * 0.05), z * (1 + Math.sin(x * 65 + k * 3) * 0.06));
+        const e = Math.abs(x) / 0.036 + Math.abs(y) / 0.031 + Math.abs(z) / 0.034;            // קרוב לפינה/שוליים = גדול יותר
+        const d = 1 - Math.max(0, Math.min(1, (e - 1.7) / 1.1)) * 0.55 - (y > 0.02 ? 0.08 : 0); // פינות ושוליים שחומים
+        col.push(d, Math.pow(d, 1.5), Math.pow(d, 2));
+      }
+      g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals();
+      return g;
+    });
     // תירס: גרעינים צהובים מבריקים, מעוגלים ושטוחים מלמטה
     M.corn = ['#f4c430', '#f0b928', '#f7cf45'].map((c) => std({ color: c, roughness: 0.3, envMapIntensity: 0.8 }));
     G.corn = (() => {
@@ -553,7 +570,7 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
   const mesh = (g, m) => { const o = new THREE.Mesh(g, m); o.castShadow = true; o.receiveShadow = true; return o; };
   const pick = (a) => a[(R() * a.length) | 0];
 
-  const TOPPING_COUNT = { greenOlive: 16, kalamata: 12, tuna: 26, onion: 11, tomato: 11, chili: 22, feta: 16, garlic: 12, corn: 22 };
+  const TOPPING_COUNT = { sweet: 14, greenOlive: 16, kalamata: 12, tuna: 26, onion: 11, tomato: 11, chili: 22, feta: 16, garlic: 12, corn: 22 };
   function makePiece(id) {
     initToppings();
     const g = new THREE.Group();
@@ -606,6 +623,10 @@ export function createPizzaScene(canvasEl, { fadeEl, onCut } = {}) {
           m.rotation.set(rnd(-0.2, 0.2), R() * 6, rnd(-0.2, 0.2)); m.scale.setScalar(rnd(0.85, 1.15)); g.add(m);
         }
         break;
+      }
+      case 'sweet': {
+        const m = mesh(pick(G.sweet), pick(M.sweet)); m.position.y = 0.03;
+        m.rotation.set(rnd(-0.12, 0.12), R() * 6, rnd(-0.12, 0.12)); m.scale.setScalar(rnd(0.88, 1.12)); g.add(m); break;
       }
       default: { const m = mesh(new THREE.SphereGeometry(0.04), M.seed); m.position.y = 0.03; g.add(m); }
     }

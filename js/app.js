@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder, fetchStatus, applyStatus } from './common.js?v=30';
+import { cfg, nextSaleDate, closeDate, ymd, heDate, heDay, money, fmtPhone, fetchSlotCounts, sendOrder, fetchStatus, applyStatus } from './common.js?v=31';
 
 const $ = (s, el = document) => el.querySelector(s);
 const panel = $('#panel');
@@ -40,7 +40,7 @@ const statusP = fetchStatus().then((st) => {
 /* ---------- הסצנה ---------- */
 let scene = null;
 try {
-  const { createPizzaScene } = await import('./scene.js?v=30');
+  const { createPizzaScene } = await import('./scene.js?v=31');
   scene = createPizzaScene($('#pizzaCanvas'), { fadeEl: $('#fade'), onCut: () => { if (!busy) $('#caption').classList.remove('show'); } });
   setTimeout(() => { if (!busy) caption('גררו את הגלגלת כדי לחתוך', 7000); }, 1200);
 } catch (e) {

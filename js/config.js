@@ -46,6 +46,7 @@ window.PIZZA_CONFIG = {
     { id: "chili",      name: "פלפל חריף",     desc: "",    price: 2 },
     { id: "feta",       name: "בולגרית",       desc: "",          price: 3 },
     { id: "garlic",     name: "שום קונפי",     desc: "",                price: 2 },
-    { id: "corn",       name: "תירס",          desc: "",                price: 2 }
+    { id: "corn",       name: "תירס",          desc: "",                price: 2 },
+    { id: "sweet",      name: "בטטה",          desc: "קוביות מטוגנות", price: 2 }
   ]
 };
