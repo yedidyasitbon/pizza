@@ -1,4 +1,4 @@
-import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit, closeDate, heDay, fetchStatus, applyStatus, saveStatus, thisWeekSale, regularClose, OPEN_UNTIL } from './common.js?v=32';
+import { cfg, nextSaleDate, ymd, fromYmd, heDate, fmtPhone, isLocal, fetchOrders, fetchWeeks, adminEdit, sendOrder, closeDate, heDay, fetchStatus, applyStatus, saveStatus, thisWeekSale, regularClose, OPEN_UNTIL } from './common.js?v=33';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -178,7 +178,7 @@ function drawEdit() {
   const opt = (arr, v) => arr.map((x) => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('');
   const slots = [...new Set([...cfg.timeSlots, keep.slot])];
   const pays = [...new Set(['מזומן', 'ביט', 'פייבוקס', keep.payment].filter(Boolean))];
-  f.innerHTML = `<h3>עריכת הזמנה #${o.orderNo}</h3>
+  f.innerHTML = `<h3>${o.orderNo ? `עריכת הזמנה #${o.orderNo}` : `הזמנה ידנית · ${esc(heDate(fromYmd(o.saleDate)))}`}</h3>
     <div class="two"><label>שם פרטי<input name="firstName" value="${esc(keep.firstName)}"></label><label>שם משפחה<input name="lastName" value="${esc(keep.lastName)}"></label></div>
     <div class="two"><label>טלפון<input name="phone" dir="ltr" value="${esc(keep.phone)}"></label><label>שעת הכנה<select name="slot">${opt(slots, keep.slot)}</select></label></div>
     <label>תשלום<select name="payment">${opt(pays, keep.payment)}</select></label>
@@ -226,14 +226,29 @@ $('#editForm').addEventListener('click', async (e) => {
       itemsText: items.map((it) => `${it.qty}× ${it.base}${it.toppings.length ? ': ' + it.toppings.join(', ') : ''}`).join('\n')
     };
     e.target.disabled = true; e.target.textContent = 'שומר…';
-    const res = await adminEdit('update', editing.o.saleDate || $('#date').value, editing.o.orderNo, $('#key').value.trim(), order);
+    const date = editing.o.saleDate || $('#date').value, key = $('#key').value.trim();
+    let no = editing.o.orderNo, res = { ok: true };
+    if (!no) {
+      // הזמנה ידנית: השרת מגביל מגשים לשעה, לכן נרשמת קודם כמגש אחד ואז מתעדכנת במלואה (בלי הגבלה)
+      const base = { ...order, saleDate: date, createdAt: new Date().toISOString(), pizzaCount: 1 };
+      res = await sendOrder(base).catch(() => ({ ok: false }));
+      if (!res.ok && res.error === 'FULL') res = await sendOrder({ ...base, slot: 'ידני' }).catch(() => ({ ok: false }));
+      no = res.orderNo;
+      if (!res.ok) { e.target.disabled = false; e.target.textContent = 'שמירה'; $('#efErr').textContent = res.error === 'CLOSED' ? 'ההזמנות באתר עצורות — פתחו אותן ונסו שוב' : 'השמירה נכשלה: ' + (res.error || ''); return; }
+    }
+    res = await adminEdit('update', date, no, key, order);
     e.target.disabled = false; e.target.textContent = 'שמירה';
     if (!res.ok) { $('#efErr').textContent = 'השמירה נכשלה: ' + (res.error || ''); return; }
-    $('#editDlg').close(); load(true);
+    $('#editDlg').close();
+    if ($('#date').value !== date) { $('#date').value = date; load(); } else load(true);
   }
 });
 
 $('#load').addEventListener('click', () => load());
+// הזמנה ידנית נכנסת תמיד ליום ההזמנות הקרוב (היום אם היום יום הכנה)
+const addDate = () => ymd(thisWeekSale());
+$('#addOrder').textContent = `+ הזמנה ידנית ל${heDay(thisWeekSale())} ${thisWeekSale().getDate()}.${thisWeekSale().getMonth() + 1}`;
+$('#addOrder').addEventListener('click', () => openEdit({ saleDate: addDate(), orderNo: 0, firstName: '', lastName: '', phone: '', slot: cfg.timeSlots[cfg.timeSlots.length - 1], payment: 'מזומן', notes: '', items: [{ base: cfg.bases[0].name, toppings: [], qty: 1 }] }));
 $('#date').addEventListener('change', () => load());
 $('#print').addEventListener('click', () => print());
 $('#csv').addEventListener('click', csv);
